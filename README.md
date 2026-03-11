@@ -1,3 +1,3 @@
 # cs304sp26-wabanimals
 
-This is my first commit!
+Ari's first commit
