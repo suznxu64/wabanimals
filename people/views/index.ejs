@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>People App</title>
+    <!-- load local stylesheet (css) -->
+    <link rel="stylesheet" href="/styles.css" />
+    <!-- loading jquery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+</head>
+<body>
+    <h1>Welcome!</h1>
+    <p>Everything is fine.</p>
+
+    <h2>Links</h2>
+
+    <p><a href="/people/">all people</a></p>
+    
+    <p><a href="/people-born-in/6">people born in June</a></p>
+
+    <form method="GET" action="/people-born-in-month/">
+        <p><label>month: <select required name="month">
+                    <% monthNames.forEach( (mn, index) => { %>
+                    <option value="<%= index %>"><%= mn %></option>
+                    <% }) %>
+        </select> </label></p>
+        <p><input type="submit" value="get"></p>
+    </form>
+
+    <!-- load local js -->
+    <script src="/main.js"></script>
+</body>
+</html>

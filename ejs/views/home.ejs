@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Node Starter</title>
+    <!-- load local stylesheet (css) -->
+    <link rel="stylesheet" href="/styles.css" />
+    <!-- loading jquery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+</head>
+<body>
+    <h1>Welcome!</h1>
+
+    <p>Everything is fine.</p>
+
+    <% if( userId === null ) { %>
+
+    <%# login form, because user not logged in %>
+    <form action="/login" method="post">
+        <label>username <input type="text" name="username"></label>
+        <label>password <input type="password" name="password"></label>
+        <input type="submit" value="login">
+    </form>
+
+    <% } else { %>
+
+    <%# logout button %>
+    <form action="/logout" method="post">
+        <button>logout <%= userId %></button>
+    </form>
+
+    <% } %>
+
+</body>
+</html>

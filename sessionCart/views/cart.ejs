@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang='en'>
+
+<head>
+  <meta charset='utf-8'>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name=author content="Olivia Giandrea">
+  <title>Cookie/Session Demo</title>
+  <link rel='stylesheet' href="/mystyle.css">
+</head>
+
+<body>
+
+  <%- include("partials/flashes.ejs") %>
+
+  <h1>Welcome to Our Place</h1>
+
+<p>Where thirsty people drink.
+
+<!-- Clip art from
+https://www.uclipart.com/beer-mug-beer-glass-cup-clipart-5hoogu/
+https://www.uclipart.com/wine-champagne-stemware-stemware-glass-clipart-1hnml3/
+https://www.uclipart.com/soda-line-angle-clipart-r9zdy2/
+-->
+
+<% ['beer', 'wine', 'soda'].forEach(item => {%>
+<div class="item">
+<p><img src="<%= item+'.png'%>" width=200 alt="<%=item%>"></p>
+
+  <form method=post action="/add">
+    <input type=hidden name="item" value="<%=item%>">
+    <input type=submit value="add to cart">
+ </form>
+</div>
+<% }) %>
+
+<form method=post action="/clearCart">
+    <input type=submit value="Clear Cart">
+</form>
+
+  <% if(showCart == 'no') { %>
+  
+<form method=post action="/showCart">
+    <input type=submit value="Show Cart">
+</form>
+  
+  <% } else { %>
+
+<p>Your cart contains:</p>
+<ul>
+      <% ['beer', 'wine', 'soda'].forEach( item => { %>
+        <li><%= cart[item]%> glasses of <%= item %></li>
+      <% }) %>
+</ul>
+<form method="post" action="/hideCart/">
+    <input type=submit value="Hide Cart">
+</form>
+
+  <% } %>
+  
+<!-- another way to do buttons -->
+<form method="post" action="/ofAge">
+    <button type="submit">I am 21</button>
+</form>
+
+
+</body>
+</html>

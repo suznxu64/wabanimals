@@ -1,0 +1,15 @@
+h1 {
+  color: purple;
+}
+
+nav a {
+  font-weight: normal;
+  text-decoration: none;
+  border-bottom: 2px solid white;
+  color: steelblue;
+}
+
+nav a[aria-current="page"] {
+  font-weight: bold;
+  border-bottom: 2px solid steelblue;
+}
