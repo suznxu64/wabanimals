@@ -1,0 +1,125 @@
+/* Basic styles */
+body {
+  font-family: 'Merriweather', serif !important; /*I had to add important to get the font to load correclty*/
+  background-color: #f0f8f4; /* Light green background */
+  color: #333; /* Dark text for better readability */
+}
+/* Navigation bar on both pages */
+.navbar {
+  background-color: #77966D; 
+  font-size: 2em;
+}
+
+.navbar a{
+  color: #333;
+}
+
+.navbar a:hover {
+  color:  #f0f8f4;
+}
+
+/* Header section */
+header {
+  background-color: #77966D; 
+  color: #F4F7F5; 
+  padding: 50px 0;
+}
+
+h1, h3 {
+  color: #F4F7F5;
+}
+
+h1 .subtitle {
+  font-size: 1.5em;
+  color: #77966D; 
+;
+}
+
+.tagline {
+  font-size: 1.2em;
+  color: #D8DBE2; 
+}
+
+.lead {
+  color: #333;
+}
+
+
+
+/* Project cards and all cards */
+.card {
+  background-color: #F4F7F5;
+  border-radius: 10px;
+  overflow: hidden; 
+  margin-bottom: 30px; 
+  width: 900px; /* fixed width for large screens */
+  margin: 20px auto; 
+}
+
+.card-body {
+  padding: 15px;
+  color: #626D58; 
+}
+
+.card-title {
+  color: #77966D; 
+}
+
+.card-text {
+  color: #626D58; 
+}
+
+/* image and video scaling for all html pages*/
+
+.profile {
+  width: 440px;
+  border-radius: 15px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); 
+}
+
+.img-fluid {
+  width: 50%; 
+  height: 300px; 
+  object-fit: cover;
+  object-position: center;
+  margin-right: 20px;
+
+}
+
+video {
+  margin-right: 20px;
+}
+
+/*Style for id element, ordered list*/
+#method-list {
+font-size: 1.2em;
+color: #804b95;
+}
+
+
+/* Button styling */
+.btn-primary {
+  background-color: #77966D; 
+  border-color: #77966D;
+}
+
+.btn-primary:hover {
+  background-color: #626D58; 
+  border-color: #626D58;
+}
+
+.btn-outline-dark {
+  color: #626D58; 
+  border-color: #626D58;
+}
+
+.btn-outline-dark:hover {
+  background-color: #D8DBE2; 
+  border-color: #D8DBE2;
+}
+
+
+section.container > .row > .col-12 {
+  max-width: 800px;
+  margin: 0 auto;
+}
