@@ -1,5 +1,5 @@
 const path = require('path');
-require("dotenv").config({ path: path.join(process.env.HOME, '.cs304env')});
+require("dotenv").config({ path: path.join(process.env.HOME, '.cs304env') });
 const express = require('express');
 const morgan = require('morgan');
 const serveStatic = require('serve-static');
@@ -39,12 +39,17 @@ app.get('/', (req, res) => {
     res.render('home.ejs');
 })
 
+app.get('/order', (req, res) => {
+    const queryData = req.query;
+    console.log(queryData);
+});
+
 
 //--------------------------- last --------------------------------
 
 const serverPort = cs304.getPort(8080);
 
 // this is last, because it never returns
-app.listen(serverPort, function() {
+app.listen(serverPort, function () {
     console.log(`open http://localhost:${serverPort}`);
 });
