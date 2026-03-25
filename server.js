@@ -39,6 +39,8 @@ app.get('/', (req, res) => {
     res.render('home.ejs');
 })
 
+
+//should this be post??
 app.get('/order', (req, res) => {
     const queryData = req.query;
     console.log(queryData);
