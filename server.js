@@ -10,7 +10,7 @@ const cookieSession = require('cookie-session');
 
 const { Connection } = require('./connection');
 const cs304 = require('./cs304');
-const { add, result } = require('lodash');
+const { add, result, find } = require('lodash');
 
 // Create and configure the app
 
@@ -33,6 +33,9 @@ app.use(express.static('public'));
 
 const mongoUri = cs304.getMongoUri();
 
+//declaring wabanimals our db for all functions/queries
+const db = "wabanimals";
+
 
 //home page results in the home ejs file
 app.get('/', (req, res) => {
@@ -45,6 +48,128 @@ app.get('/order', (req, res) => {
     const queryData = req.query;
     console.log(queryData);
 });
+
+//inserts new post entry with inputted parameters, some from back end, some from form
+async function insertNewPost(db, postID, userID, postTitle, species, description, sightingDate, sightingTime, sightingLocation){
+    const newPost = {
+        //created by us
+        postID: postID,
+        //determined on the back end
+        userID: userID,
+        //from form
+        postTitle: postTitle,
+        //from form
+        species: species,
+        //do we still want this?? numComments: '',
+        //from form
+        description: description,
+        //from form
+        sightingDate: sightingDate,
+        //from form
+        sightingTime: sightingTime,
+        //from form
+        sightingLocation: sightingLocation
+    }
+
+    const result = await db.collection("posts").insertOne(newPost);
+    //return true when result is within the database
+    return result.acknowledged === true;
+}
+
+//finds a post in the db given the postID
+async function findPost(db, postID){
+    const post = await db.collection("posts")
+        .findOne({postID: postID});
+
+    return post;
+}
+
+//NEED TO DO UPDATEPOST - what are they allowed to update??
+// updates pet by searching for petID through database
+
+//deletes post by postID - only for admin
+async function deletePost(db, postID){
+    const result = await db.collection("posts").deleteOne({postID: postID});
+
+    //return true if one object was deleted
+    return result.deletedCount === 1;
+}
+
+
+//inserts new user entry with the inputted parameters
+async function insertNewUser(db, userID, numPosts, admin, numTotalComments, speciesSighted){
+    const newUser = {
+        userID: userID,
+        numPosts: numPosts,
+        admin: admin,
+        numTotalComments: numTotalComments,
+        speciesSighted: speciesSighted
+    }
+
+    const result = await db.collection("users").insertOne(newUser);
+    return result.acknowledged === true;
+}
+
+//finds a user in the db given the userID
+async function findUser(db, userID){
+    const user = await db.collection("users")
+        .findOne({userID: userID});
+
+    return user;
+}
+
+//DO UPDATE USER
+
+//deletes user by userID - only for admin
+async function deleteUser(db, userID){
+    const result = await db.collection("users").deleteOne({userID: userID});
+
+    //return true if one object was deleted
+    return result.deletedCount === 1;
+}
+
+
+
+async function main(){
+    console.log('starting function check...\n');
+
+    //load wabanimals database
+    const wabanimals_db = await Connection.open(mongoUri, 'wabanimals');
+
+    //inserting a post under ai106, postID = 1, 3 cute bunnies
+    const test_insert_post = await insertNewPost(wabanimals_db, 1, 'ai106', 'three cute bunnies', 'rabbit', 'super cute bunnies!', '2026-03-26', '10:04 AM', 'Sev Green');
+    console.log("insertNewPost (test 3 bunnies): ", test_insert_post);
+
+    //searching for postID = 1 (3 cute bunnies)
+    const test_find_post = await findPost(wabanimals_db, 1);
+    console.log("findPost: ", test_find_post);
+
+    //TEST UPDATE POST HERE
+
+    //deleting postID = 1 (3 cute bunnies)
+    const test_delete_post = await deletePost(wabanimals_db, 1);
+    console.log("deletePost: ", test_delete_post);
+
+    //inserting a user as ai106
+    const test_insert_user = await insertNewUser(wabanimals_db, 'ai106', 3, true, 2, ['rabbit', 'hawk', 'goose']);
+    console.log("insertNewUser (ai106): ", test_insert_user);
+
+    //searching for userID = ai106
+    const test_find_user = await findUser(wabanimals_db, 'ai106');
+    console.log("findUser: ", test_find_user);
+
+    //TEST UPDATE USER HERE
+
+    //deleting userID = 'ai106'
+    const test_delete_user = await deleteUser(wabanimals_db, 'ai106');
+    console.log("deleteUser: ", test_delete_user);
+
+    //DECIDE ON HOW TO DO ANIMALS COLLECTION
+
+
+    await Connection.close();
+}
+main().catch(console.error);
 
 
 //--------------------------- last --------------------------------
