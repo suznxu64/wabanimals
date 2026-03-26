@@ -1,9 +1,9 @@
-<form class="post"       id="post-form"       method="GET"      action="/order">
-      <p><label>Post title: <input name="title"></label></p>
+<form class="post"  id="post-form"  method="POST"  action="/order">
+    <p><label>Post title: <input name="title"></label></p>
     <p><button type="upload">Upload image(s)</button></p>
-      <p><!-- it should be okay to use a structural label here, but WAVE warns, and I'd rather apease it -->
-              <label for="species_menu">Species</label>
-              <select id="species_menu" name="species">
+    <p><!-- it should be okay to use a structural label here, but WAVE warns, and I'd rather apease it -->
+        <label for="species_menu">Species</label>
+        <select id="species_menu" name="species">
             <option value="">choose species</option>
             <option value="goose">goose</option>
             <option value="swan">swan</option>
@@ -29,7 +29,8 @@
             <option value="frog">frog</option>
             <option value="fish">fish</option>
             <option value="other">other</option> <!--add text box -->
-        </select></p>
+        </select>
+    </p>
 
 
     <p><!--Location -->
