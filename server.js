@@ -35,23 +35,22 @@ const mongoUri = cs304.getMongoUri();
 
 //declaring wabanimals our db for all functions/queries
 const db = "wabanimals";
-
+const USERS = "users";
 
 //home page results in the home ejs file
 app.get('/', (req, res) => {
-    res.render('home.ejs');
+    res.render('home');
 })
 
 
-//should this be post??
-app.get('/order', (req, res) => {
-    const queryData = req.query;
-    console.log(queryData);
-});
-
 
 //register form
+app.get('/join', (req, res) => {
+    res.render('sign_up');
+});
+
 app.post("/join", async (req, res) => {
+    console.log("hello");
     try {
         const username = req.body.username;
         const password = req.body.password;
@@ -70,11 +69,15 @@ app.post("/join", async (req, res) => {
         req.flash('info', 'successfully joined and logged in as ' + username);
         req.session.username = username;
         req.session.logged_in = true;
-        return res.redirect('/hello');
+        return res.render('sign_up');
     } catch (error) {
         req.flash('error', `Form submission error: ${error}`);
         return res.redirect('/')
     }
+});
+
+app.get('/login', (req, res) => {
+    res.render('login');
 });
 
 app.post("/login", async (req, res) => {
@@ -105,6 +108,10 @@ app.post("/login", async (req, res) => {
     }
 });
 
+app.get('/logout', (req, res) => {
+    res.render('logout');
+});
+
 app.post('/logout', (req, res) => {
     if (req.session.username) {
         req.session.username = null;
@@ -113,7 +120,7 @@ app.post('/logout', (req, res) => {
         return res.redirect('/');
     } else {
         req.flash('error', 'You are not logged in - please do so.');
-        return res.redirect('/');
+        return res.render('sign_up');
     }
 });
 
@@ -162,9 +169,21 @@ async function findPost(db, postID) {
     return post;
 }
 
-//NEED TO DO UPDATEPOST - what are they allowed to update??
-// updates pet by searching for petID through database
-
+// updates pet by searching for postID through database -- admin only
+async function updatePost(db, postID, userID, postTitle, species, description, sightingDate, sightingTime, sightingLocation){
+    const result = await db.collection("pets")
+        .updateOne(
+            {postID: postID},
+            {$set: {postID: postID,userID: userID,
+            postTitle: postTitle,
+            species: species,
+            description: description,
+            sightingDate: sightingDate,
+            sightingLocation: sightingLocation}},
+            {upsert: false} 
+        )
+    return result.modifiedCount === 1;
+}
 
 //deletes post by postID - only for admin
 async function deletePost(db, postID) {
@@ -197,7 +216,19 @@ async function findUser(db, userID) {
     return user;
 }
 
-//DO UPDATE USER
+//updates  user profile in the db given the userID
+async function updateUser(db, userID, numPosts, admin, numTotalComments, speciesSighted){
+    const result = await db.collection("users")
+    .updateOne({userID: userID}, 
+        {$set: {userID: userID,
+            numPosts: numPosts,
+            admin: admin,
+            numTotalComments: numTotalComments,
+            speciesSighted: speciesSighted}
+        }
+    )
+    return result.modifiedCount === 1;
+}
 
 //deletes user by userID - only for admin
 async function deleteUser(db, userID) {
@@ -223,7 +254,9 @@ async function main() {
     const test_find_post = await findPost(wabanimals_db, 1);
     console.log("findPost: ", test_find_post);
 
-    //TEST UPDATE POST HERE
+    //updating bunny post to 5 cute bunnies in paramecium pond
+    const test_update_post = await updatePost(wabanimals_db, 1, 'ai106', 'five cute bunnies', 'rabbit', 'super cute bunnies!', '2026-03-26', '10:04 AM', 'Paramecium Pond' );
+    console.log("updatePost: test_update_post")
 
     //deleting postID = 1 (3 cute bunnies)
     const test_delete_post = await deletePost(wabanimals_db, 1);
@@ -237,14 +270,13 @@ async function main() {
     const test_find_user = await findUser(wabanimals_db, 'ai106');
     console.log("findUser: ", test_find_user);
 
-    //TEST UPDATE USER HERE
+    //updating user ai106 to now sight frog as well
+    const test_update_user = await updateUser(wabanimals_db, 'ai106', 3, true, 2, ['rabbit', 'hawk', 'goose', 'frog']);
+    console.log("updateUser (ai106): ", test_update_user);
 
     //deleting userID = 'ai106'
     const test_delete_user = await deleteUser(wabanimals_db, 'ai106');
     console.log("deleteUser: ", test_delete_user);
-
-    //DECIDE ON HOW TO DO ANIMALS COLLECTION
-
 
     await Connection.close();
 }
