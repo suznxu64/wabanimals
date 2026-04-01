@@ -11,6 +11,7 @@ const cookieSession = require('cookie-session');
 const { Connection } = require('./connection');
 const cs304 = require('./cs304');
 const { add, result, find } = require('lodash');
+const flash = require('express-flash');
 
 // Create and configure the app
 
@@ -30,19 +31,27 @@ app.use(cs304.logRequestData);  // tell the user about any request data
 app.use(serveStatic('public'));
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
+app.use(flash());
+
+app.use(cookieSession({
+  name: 'session',
+  keys: [cs304.randomString(20)],
+  maxAge: 24 * 60 * 60 * 1000 // 24 hours
+}))
+
 
 const mongoUri = cs304.getMongoUri();
 
 //declaring wabanimals our db for all functions/queries
-const db = "wabanimals";
+const wabanimals_db = "wabanimals";
 const USERS = "users";
+const POSTS = "posts";
+let postIDCounter = 1;
 
 //home page results in the home ejs file
 app.get('/', (req, res) => {
     res.render('home');
 })
-
-
 
 //register form
 app.get('/join', (req, res) => {
@@ -51,15 +60,15 @@ app.get('/join', (req, res) => {
 
 app.post("/join", async (req, res) => {
     console.log("hello");
-    try {
+    //try {
         const username = req.body.username;
         const password = req.body.password;
-        const db = await Connection.open(mongoUri, DBNAME);
+        const db = await Connection.open(mongoUri, wabanimals_db);
         var existingUser = await db.collection(USERS).findOne({ username: username });
-        if (existingUser) {
+        /* if (existingUser) {
             req.flash('error', "Login already exists - please try logging in instead.");
             return res.redirect('/')
-        }
+        } */
         const hash = await bcrypt.hash(password, ROUNDS);
         await db.collection(USERS).insertOne({
             username: username,
@@ -69,11 +78,17 @@ app.post("/join", async (req, res) => {
         req.flash('info', 'successfully joined and logged in as ' + username);
         req.session.username = username;
         req.session.logged_in = true;
-        return res.render('sign_up');
-    } catch (error) {
-        req.flash('error', `Form submission error: ${error}`);
-        return res.redirect('/')
-    }
+
+        //inserting new user with given username but no data in the app
+        const result = await insertNewUser(wabanimals_db, username, 0, false, 0, []);
+        console.log("inserting userID ", result.userID, "into USERS: ", result)
+
+        return res.redirect('/');
+            /* return res.redirect('/');
+        } catch (error) {
+            req.flash('error', `Form submission error: ${error}`);
+            return res.redirect('/')
+        } */
 });
 
 app.get('/login', (req, res) => {
@@ -133,32 +148,94 @@ function requiresLogin(req, res, next) {
     }
 }
 
+//post for submitting post form (sent from ejs)
+//creates a post database entry
+app.post("/submit-post-form", async (req,res) => {
+    console.log("________________________________")
+    console.log("submitting post form")
 
-//inserts new post entry with inputted parameters, some from back end, some from form
-async function insertNewPost(db, postID, userID, postTitle, species, description, sightingDate, sightingTime, sightingLocation) {
-    const newPost = {
-        //created by us
-        postID: postID,
-        //determined on the back end
-        userID: userID,
-        //from form
-        postTitle: postTitle,
-        //from form
-        species: species,
-        //do we still want this?? numComments: '',
-        //from form
-        description: description,
-        //from form
-        sightingDate: sightingDate,
-        //from form
-        sightingTime: sightingTime,
-        //from form
-        sightingLocation: sightingLocation
+    try {
+    const db = await Connection.open(mongoUri, wabanimals_db);
+    //collect title from the form
+    const post_title = req.body.title;
+    console.log("title: ", post_title)
+
+    //collect species from form
+    const species = req.body.species;
+    console.log("species: ", species)
+
+
+    //input after suzy is done
+    //const image = req.body.image;
+
+    //collect location from form
+    const location = req.body.location;
+    console.log("location: ", location);
+
+    //collect sightingTime from form
+    const sightingTime = req.body.time;
+    console.log("sightingTime: ", sightingTime);
+
+    //collect sightingDate from form
+    const sightingDate = req.body.date;
+    console.log("sightingDate: ", sightingDate);
+
+    //collect description from form
+    const description = req.body.description;
+    console.log("description: ", description);
+
+     // get user from session - not running yet
+    //const userID = req.session.username;
+    const userID = null;
+
+    //create new db entry in the posts collection 
+    //postID determined from postIDCounter
+    const result = await insertNewPost(db, userID, post_title, species, description, sightingDate, sightingTime, location);
+    console.log("inserting postID ", result.postID, "into POSTS: ", result)
+
+    
+    //insert a flash here saying your post has been uploaded?
+    if (result) {
+            req.flash('info', `You have successfully uploaded your post! Your postID = ${result.postID}`);
+            return res.redirect('/');
+        } 
+
+    } catch (error) {
+        console.log("error submitting post:", error);
+        req.flash('error', `Error submitting post: ${error}`);
+        return res.redirect('/');
     }
 
+});
+
+
+//inserts new post entry with inputted parameters, some from back end, some from form
+async function insertNewPost(db, userID, postTitle, species, description, sightingDate, sightingTime, sightingLocation) {
+    console.log("counter:", postIDCounter);
+    let currentpostID = postIDCounter;
+    console.log('currentPostId: ', currentpostID);
+    
+    const newPost = {
+        //created by us based on last postid used
+        postID: currentpostID,
+        userID: null,
+        postTitle: postTitle,
+        species: species,
+        description: description,
+        sightingDate: sightingDate,
+        sightingTime: sightingTime,
+        sightingLocation: sightingLocation
+    }
+    //increment postid
+    postIDCounter ++;
+
+    console.log("newPost: ", newPost);
     const result = await db.collection("posts").insertOne(newPost);
     //return true when result is within the database
-    return result.acknowledged === true;
+    console.log("your postID is: ", currentpostID)
+    return {success: result.acknowledged,
+        postID: currentpostID
+    };
 }
 
 //finds a post in the db given the postID
@@ -171,7 +248,7 @@ async function findPost(db, postID) {
 
 // updates pet by searching for postID through database -- admin only
 async function updatePost(db, postID, userID, postTitle, species, description, sightingDate, sightingTime, sightingLocation){
-    const result = await db.collection("pets")
+    const result = await db.collection("posts")
         .updateOne(
             {postID: postID},
             {$set: {postID: postID,userID: userID,
@@ -205,7 +282,9 @@ async function insertNewUser(db, userID, numPosts, admin, numTotalComments, spec
     }
 
     const result = await db.collection("users").insertOne(newUser);
-    return result.acknowledged === true;
+    return {success: result.acknowledged,
+        userID: userID
+    }
 }
 
 //finds a user in the db given the userID
@@ -247,40 +326,40 @@ async function main() {
     const wabanimals_db = await Connection.open(mongoUri, 'wabanimals');
 
     //inserting a post under ai106, postID = 1, 3 cute bunnies
-    const test_insert_post = await insertNewPost(wabanimals_db, 1, 'ai106', 'three cute bunnies', 'rabbit', 'super cute bunnies!', '2026-03-26', '10:04 AM', 'Sev Green');
-    console.log("insertNewPost (test 3 bunnies): ", test_insert_post);
+    //const test_insert_post = await insertNewPost(wabanimals_db, 'ai106', 'three cute bunnies', 'rabbit', 'super cute bunnies!', '2026-03-26', '10:04 AM', 'Sev Green');
+    //console.log("insertNewPost (test 3 bunnies): ", test_insert_post);
 
     //searching for postID = 1 (3 cute bunnies)
-    const test_find_post = await findPost(wabanimals_db, 1);
-    console.log("findPost: ", test_find_post);
+    //const test_find_post = await findPost(wabanimals_db, 1);
+    //console.log("findPost: ", test_find_post);
 
     //updating bunny post to 5 cute bunnies in paramecium pond
-    const test_update_post = await updatePost(wabanimals_db, 1, 'ai106', 'five cute bunnies', 'rabbit', 'super cute bunnies!', '2026-03-26', '10:04 AM', 'Paramecium Pond' );
-    console.log("updatePost: test_update_post")
+    //const test_update_post = await updatePost(wabanimals_db, 1, 'ai106', 'five cute bunnies', 'rabbit', 'super cute bunnies!', '2026-03-26', '10:04 AM', 'Paramecium Pond' );
+    //console.log("updatePost: ", test_update_post);
 
     //deleting postID = 1 (3 cute bunnies)
-    const test_delete_post = await deletePost(wabanimals_db, 1);
-    console.log("deletePost: ", test_delete_post);
+    //const test_delete_post = await deletePost(wabanimals_db, 1);
+    //console.log("deletePost: ", test_delete_post);
 
     //inserting a user as ai106
-    const test_insert_user = await insertNewUser(wabanimals_db, 'ai106', 3, true, 2, ['rabbit', 'hawk', 'goose']);
-    console.log("insertNewUser (ai106): ", test_insert_user);
+    //const test_insert_user = await insertNewUser(wabanimals_db, 'ai106', 3, true, 2, ['rabbit', 'hawk', 'goose']);
+    //console.log("insertNewUser (ai106): ", test_insert_user);
 
     //searching for userID = ai106
-    const test_find_user = await findUser(wabanimals_db, 'ai106');
-    console.log("findUser: ", test_find_user);
+    //const test_find_user = await findUser(wabanimals_db, 'ai106');
+    //console.log("findUser: ", test_find_user);
 
     //updating user ai106 to now sight frog as well
-    const test_update_user = await updateUser(wabanimals_db, 'ai106', 3, true, 2, ['rabbit', 'hawk', 'goose', 'frog']);
-    console.log("updateUser (ai106): ", test_update_user);
+    //const test_update_user = await updateUser(wabanimals_db, 'ai106', 3, true, 2, ['rabbit', 'hawk', 'goose', 'frog']);
+    //console.log("updateUser (ai106): ", test_update_user);
 
     //deleting userID = 'ai106'
-    const test_delete_user = await deleteUser(wabanimals_db, 'ai106');
-    console.log("deleteUser: ", test_delete_user);
+    //const test_delete_user = await deleteUser(wabanimals_db, 'ai106');
+    //console.log("deleteUser: ", test_delete_user);
 
     await Connection.close();
 }
-main().catch(console.error);
+//main().catch(console.error);
 
 
 //--------------------------- last --------------------------------
