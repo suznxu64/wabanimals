@@ -2,8 +2,8 @@
     <p><label>Post title: <input name="title"></label></p>
     <p><button type="button">Upload image(s)</button></p>
     <p><!-- it should be okay to use a structural label here, but WAVE warns, and I'd rather apease it -->
-        <label for="species_menu">Species</label>
-        <select id="species_menu" name="species">
+        <label for="species">Species</label>
+        <select id="species" name="species">
             <option value="">choose species</option>
             <option value="goose">goose</option>
             <option value="swan">swan</option>
@@ -34,8 +34,8 @@
 
 
     <p><!--Location -->
-        <label for="location_menu">Sighting Location</label>
-        <select id="location_menu" name="location">
+        <label for="location">Sighting Location</label>
+        <select id="location" name="location">
             <option value="">choose location</option>
             <option value="Tower Court">Tower Court</option>
             <option value="Quint">Quint</option>
@@ -61,7 +61,7 @@
         </select>
     </p>
     <p><label>Sighting time:
-            <input name="time" type="time" min="0:00" max="24:59" step="60">
+            <input name="time" type="time" min="11:00" max="21:00" step="900">
         </label></p>
 
     <p><label>Sighting date:
@@ -69,8 +69,8 @@
         </label></p>
 
     <p>
-        <label for="description_box">Description of your sighting:</label>
-        <textarea id="description_box" rows="3" cols="30" name="description"></textarea>
+        <label for="description">Description of your sighting:</label>
+        <textarea id="description" rows="3" cols="30" name="description"></textarea>
     </p>
     <p><button type="submit">Submit post</button></p>
 </form>

@@ -35,22 +35,107 @@ const mongoUri = cs304.getMongoUri();
 
 //declaring wabanimals our db for all functions/queries
 const db = "wabanimals";
-
+const USERS = "users";
 
 //home page results in the home ejs file
 app.get('/', (req, res) => {
-    res.render('home.ejs');
+    res.render('home');
 })
 
 
-//should this be post??
-app.get('/order', (req, res) => {
-    const queryData = req.query;
-    console.log(queryData);
+
+//register form
+app.get('/join', (req, res) => {
+    res.render('sign_up');
 });
 
+app.post("/join", async (req, res) => {
+    console.log("hello");
+    try {
+        const username = req.body.username;
+        const password = req.body.password;
+        const db = await Connection.open(mongoUri, DBNAME);
+        var existingUser = await db.collection(USERS).findOne({ username: username });
+        if (existingUser) {
+            req.flash('error', "Login already exists - please try logging in instead.");
+            return res.redirect('/')
+        }
+        const hash = await bcrypt.hash(password, ROUNDS);
+        await db.collection(USERS).insertOne({
+            username: username,
+            hash: hash
+        });
+        console.log('successfully joined', username, password, hash);
+        req.flash('info', 'successfully joined and logged in as ' + username);
+        req.session.username = username;
+        req.session.logged_in = true;
+        return res.render('sign_up');
+    } catch (error) {
+        req.flash('error', `Form submission error: ${error}`);
+        return res.redirect('/')
+    }
+});
+
+app.get('/login', (req, res) => {
+    res.render('login');
+});
+
+app.post("/login", async (req, res) => {
+    try {
+        const username = req.body.username;
+        const password = req.body.password;
+        const db = await Connection.open(mongoUri, DBNAME);
+        var existingUser = await db.collection(USERS).findOne({ username: username });
+        console.log('user', existingUser);
+        if (!existingUser) {
+            req.flash('error', "Username does not exist - try again.");
+            return res.redirect('/')
+        }
+        const match = await bcrypt.compare(password, existingUser.hash);
+        console.log('match', match);
+        if (!match) {
+            req.flash('error', "Username or password incorrect - try again.");
+            return res.redirect('/')
+        }
+        req.flash('info', 'successfully logged in as ' + username);
+        req.session.username = username;
+        req.session.logged_in = true;
+        console.log('login as', username);
+        return res.redirect('/hello');
+    } catch (error) {
+        req.flash('error', `Form submission error: ${error}`);
+        return res.redirect('/')
+    }
+});
+
+app.get('/logout', (req, res) => {
+    res.render('logout');
+});
+
+app.post('/logout', (req, res) => {
+    if (req.session.username) {
+        req.session.username = null;
+        req.session.logged_in = false;
+        req.flash('info', 'You are logged out');
+        return res.redirect('/');
+    } else {
+        req.flash('error', 'You are not logged in - please do so.');
+        return res.render('sign_up');
+    }
+});
+
+function requiresLogin(req, res, next) {
+    if (!req.session.loggedIn) {
+        req.flash('error', 'This page requires you to be logged in - please do so.');
+        return res.redirect("/");
+    } else {
+        next();
+    }
+}
+
+
 //inserts new post entry with inputted parameters, some from back end, some from form
-async function insertNewPost(db, postID, userID, postTitle, species, description, sightingDate, sightingTime, sightingLocation){
+async function insertNewPost(db, postID, userID, postTitle, species, description, sightingDate, sightingTime, sightingLocation) {
     const newPost = {
         //created by us
         postID: postID,
@@ -77,19 +162,32 @@ async function insertNewPost(db, postID, userID, postTitle, species, description
 }
 
 //finds a post in the db given the postID
-async function findPost(db, postID){
+async function findPost(db, postID) {
     const post = await db.collection("posts")
-        .findOne({postID: postID});
+        .findOne({ postID: postID });
 
     return post;
 }
 
-//NEED TO DO UPDATEPOST - what are they allowed to update??
-// updates pet by searching for petID through database
+// updates pet by searching for postID through database -- admin only
+async function updatePost(db, postID, userID, postTitle, species, description, sightingDate, sightingTime, sightingLocation){
+    const result = await db.collection("pets")
+        .updateOne(
+            {postID: postID},
+            {$set: {postID: postID,userID: userID,
+            postTitle: postTitle,
+            species: species,
+            description: description,
+            sightingDate: sightingDate,
+            sightingLocation: sightingLocation}},
+            {upsert: false} 
+        )
+    return result.modifiedCount === 1;
+}
 
 //deletes post by postID - only for admin
-async function deletePost(db, postID){
-    const result = await db.collection("posts").deleteOne({postID: postID});
+async function deletePost(db, postID) {
+    const result = await db.collection("posts").deleteOne({ postID: postID });
 
     //return true if one object was deleted
     return result.deletedCount === 1;
@@ -97,7 +195,7 @@ async function deletePost(db, postID){
 
 
 //inserts new user entry with the inputted parameters
-async function insertNewUser(db, userID, numPosts, admin, numTotalComments, speciesSighted){
+async function insertNewUser(db, userID, numPosts, admin, numTotalComments, speciesSighted) {
     const newUser = {
         userID: userID,
         numPosts: numPosts,
@@ -111,18 +209,30 @@ async function insertNewUser(db, userID, numPosts, admin, numTotalComments, spec
 }
 
 //finds a user in the db given the userID
-async function findUser(db, userID){
+async function findUser(db, userID) {
     const user = await db.collection("users")
-        .findOne({userID: userID});
+        .findOne({ userID: userID });
 
     return user;
 }
 
-//DO UPDATE USER
+//updates  user profile in the db given the userID
+async function updateUser(db, userID, numPosts, admin, numTotalComments, speciesSighted){
+    const result = await db.collection("users")
+    .updateOne({userID: userID}, 
+        {$set: {userID: userID,
+            numPosts: numPosts,
+            admin: admin,
+            numTotalComments: numTotalComments,
+            speciesSighted: speciesSighted}
+        }
+    )
+    return result.modifiedCount === 1;
+}
 
 //deletes user by userID - only for admin
-async function deleteUser(db, userID){
-    const result = await db.collection("users").deleteOne({userID: userID});
+async function deleteUser(db, userID) {
+    const result = await db.collection("users").deleteOne({ userID: userID });
 
     //return true if one object was deleted
     return result.deletedCount === 1;
@@ -130,7 +240,7 @@ async function deleteUser(db, userID){
 
 
 
-async function main(){
+async function main() {
     console.log('starting function check...\n');
 
     //load wabanimals database
@@ -144,7 +254,9 @@ async function main(){
     const test_find_post = await findPost(wabanimals_db, 1);
     console.log("findPost: ", test_find_post);
 
-    //TEST UPDATE POST HERE
+    //updating bunny post to 5 cute bunnies in paramecium pond
+    const test_update_post = await updatePost(wabanimals_db, 1, 'ai106', 'five cute bunnies', 'rabbit', 'super cute bunnies!', '2026-03-26', '10:04 AM', 'Paramecium Pond' );
+    console.log("updatePost: test_update_post")
 
     //deleting postID = 1 (3 cute bunnies)
     const test_delete_post = await deletePost(wabanimals_db, 1);
@@ -158,14 +270,13 @@ async function main(){
     const test_find_user = await findUser(wabanimals_db, 'ai106');
     console.log("findUser: ", test_find_user);
 
-    //TEST UPDATE USER HERE
+    //updating user ai106 to now sight frog as well
+    const test_update_user = await updateUser(wabanimals_db, 'ai106', 3, true, 2, ['rabbit', 'hawk', 'goose', 'frog']);
+    console.log("updateUser (ai106): ", test_update_user);
 
     //deleting userID = 'ai106'
     const test_delete_user = await deleteUser(wabanimals_db, 'ai106');
     console.log("deleteUser: ", test_delete_user);
-
-    //DECIDE ON HOW TO DO ANIMALS COLLECTION
-
 
     await Connection.close();
 }
