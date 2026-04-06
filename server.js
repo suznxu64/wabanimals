@@ -34,9 +34,9 @@ app.use(express.static('public'));
 app.use(flash());
 
 app.use(cookieSession({
-  name: 'session',
-  keys: [cs304.randomString(20)],
-  maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    name: 'session',
+    keys: [cs304.randomString(20)],
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }))
 
 
@@ -53,6 +53,57 @@ app.get('/', (req, res) => {
     res.render('home');
 })
 
+
+//search route 
+app.get('/search', async (req, res) => {
+
+    try {
+        const term = req.query.term;
+        const kind = req.query.kind;
+
+        // if no search yet, render empty page
+        if (!term || !kind) {
+            return res.render('search', {
+                results: null,
+                term: "",
+                kind: ""
+            });
+        }
+        const db = await Connection.open(mongoUri, wabanimals_db);
+
+        let query = {};
+
+        if (term && kind) {
+            if (kind === "species") {
+                query.species = { $regex: term, $options: "i" };
+            } else if (kind === "location") {
+                query.sightingLocation = { $regex: term, $options: "i" };
+            } else if (kind === "date") {
+                query.sightingDate = term;
+            }
+        }
+
+        const results = await db.collection("posts").find(query).toArray();
+        //flash errors
+        if (results.length === 0) {
+            req.flash('info', `No results found for "${term}" in ${kind}.`);
+        }
+
+        res.render("search", {
+            results: results,
+            term: term,
+            kind: kind
+        });
+
+    } catch (err) {
+        console.error("Search error:", err);
+        req.flash('error', "Search failed: " + err.message);
+        res.redirect('/search');
+    }
+
+
+});
+
 //register form
 app.get('/join', (req, res) => {
     res.render('sign_up');
@@ -61,34 +112,34 @@ app.get('/join', (req, res) => {
 app.post("/join", async (req, res) => {
     console.log("hello");
     //try {
-        const username = req.body.username;
-        const password = req.body.password;
-        const db = await Connection.open(mongoUri, wabanimals_db);
-        var existingUser = await db.collection(USERS).findOne({ username: username });
-        /* if (existingUser) {
-            req.flash('error', "Login already exists - please try logging in instead.");
-            return res.redirect('/')
-        } */
-        const hash = await bcrypt.hash(password, ROUNDS);
-        await db.collection(USERS).insertOne({
-            username: username,
-            hash: hash
-        });
-        console.log('successfully joined', username, password, hash);
-        req.flash('info', 'successfully joined and logged in as ' + username);
-        req.session.username = username;
-        req.session.logged_in = true;
+    const username = req.body.username;
+    const password = req.body.password;
+    const db = await Connection.open(mongoUri, wabanimals_db);
+    var existingUser = await db.collection(USERS).findOne({ username: username });
+    /* if (existingUser) {
+        req.flash('error', "Login already exists - please try logging in instead.");
+        return res.redirect('/')
+    } */
+    const hash = await bcrypt.hash(password, ROUNDS);
+    await db.collection(USERS).insertOne({
+        username: username,
+        hash: hash
+    });
+    console.log('successfully joined', username, password, hash);
+    req.flash('info', 'successfully joined and logged in as ' + username);
+    req.session.username = username;
+    req.session.logged_in = true;
 
-        //inserting new user with given username but no data in the app
-        const result = await insertNewUser(wabanimals_db, username, 0, false, 0, []);
-        console.log("inserting userID ", result.userID, "into USERS: ", result)
+    //inserting new user with given username but no data in the app
+    const result = await insertNewUser(wabanimals_db, username, 0, false, 0, []);
+    console.log("inserting userID ", result.userID, "into USERS: ", result)
 
-        return res.redirect('/');
-            /* return res.redirect('/');
-        } catch (error) {
-            req.flash('error', `Form submission error: ${error}`);
-            return res.redirect('/')
-        } */
+    return res.redirect('/');
+    /* return res.redirect('/');
+} catch (error) {
+    req.flash('error', `Form submission error: ${error}`);
+    return res.redirect('/')
+} */
 });
 
 app.get('/login', (req, res) => {
@@ -150,55 +201,55 @@ function requiresLogin(req, res, next) {
 
 //post for submitting post form (sent from ejs)
 //creates a post database entry
-app.post("/submit-post-form", async (req,res) => {
+app.post("/submit-post-form", async (req, res) => {
     console.log("________________________________")
     console.log("submitting post form")
 
     try {
-    const db = await Connection.open(mongoUri, wabanimals_db);
-    //collect title from the form
-    const post_title = req.body.title;
-    console.log("title: ", post_title)
+        const db = await Connection.open(mongoUri, wabanimals_db);
+        //collect title from the form
+        const post_title = req.body.title;
+        console.log("title: ", post_title)
 
-    //collect species from form
-    const species = req.body.species;
-    console.log("species: ", species)
+        //collect species from form
+        const species = req.body.species;
+        console.log("species: ", species)
 
 
-    //input after suzy is done
-    //const image = req.body.image;
+        //input after suzy is done
+        //const image = req.body.image;
 
-    //collect location from form
-    const location = req.body.location;
-    console.log("location: ", location);
+        //collect location from form
+        const location = req.body.location;
+        console.log("location: ", location);
 
-    //collect sightingTime from form
-    const sightingTime = req.body.time;
-    console.log("sightingTime: ", sightingTime);
+        //collect sightingTime from form
+        const sightingTime = req.body.time;
+        console.log("sightingTime: ", sightingTime);
 
-    //collect sightingDate from form
-    const sightingDate = req.body.date;
-    console.log("sightingDate: ", sightingDate);
+        //collect sightingDate from form
+        const sightingDate = req.body.date;
+        console.log("sightingDate: ", sightingDate);
 
-    //collect description from form
-    const description = req.body.description;
-    console.log("description: ", description);
+        //collect description from form
+        const description = req.body.description;
+        console.log("description: ", description);
 
-     // get user from session - not running yet
-    //const userID = req.session.username;
-    const userID = null;
+        // get user from session - not running yet
+        //const userID = req.session.username;
+        const userID = null;
 
-    //create new db entry in the posts collection 
-    //postID determined from postIDCounter
-    const result = await insertNewPost(db, userID, post_title, species, description, sightingDate, sightingTime, location);
-    console.log("inserting postID ", result.postID, "into POSTS: ", result)
+        //create new db entry in the posts collection 
+        //postID determined from postIDCounter
+        const result = await insertNewPost(db, userID, post_title, species, description, sightingDate, sightingTime, location);
+        console.log("inserting postID ", result.postID, "into POSTS: ", result)
 
-    
-    //insert a flash here saying your post has been uploaded?
-    if (result) {
+
+        //insert a flash here saying your post has been uploaded?
+        if (result) {
             req.flash('info', `You have successfully uploaded your post! Your postID = ${result.postID}`);
             return res.redirect('/');
-        } 
+        }
 
     } catch (error) {
         console.log("error submitting post:", error);
@@ -214,7 +265,7 @@ async function insertNewPost(db, userID, postTitle, species, description, sighti
     console.log("counter:", postIDCounter);
     let currentpostID = postIDCounter;
     console.log('currentPostId: ', currentpostID);
-    
+
     const newPost = {
         //created by us based on last postid used
         postID: currentpostID,
@@ -227,13 +278,14 @@ async function insertNewPost(db, userID, postTitle, species, description, sighti
         sightingLocation: sightingLocation
     }
     //increment postid
-    postIDCounter ++;
+    postIDCounter++;
 
     console.log("newPost: ", newPost);
     const result = await db.collection("posts").insertOne(newPost);
     //return true when result is within the database
     console.log("your postID is: ", currentpostID)
-    return {success: result.acknowledged,
+    return {
+        success: result.acknowledged,
         postID: currentpostID
     };
 }
@@ -247,17 +299,21 @@ async function findPost(db, postID) {
 }
 
 // updates pet by searching for postID through database -- admin only
-async function updatePost(db, postID, userID, postTitle, species, description, sightingDate, sightingTime, sightingLocation){
+async function updatePost(db, postID, userID, postTitle, species, description, sightingDate, sightingTime, sightingLocation) {
     const result = await db.collection("posts")
         .updateOne(
-            {postID: postID},
-            {$set: {postID: postID,userID: userID,
-            postTitle: postTitle,
-            species: species,
-            description: description,
-            sightingDate: sightingDate,
-            sightingLocation: sightingLocation}},
-            {upsert: false} 
+            { postID: postID },
+            {
+                $set: {
+                    postID: postID, userID: userID,
+                    postTitle: postTitle,
+                    species: species,
+                    description: description,
+                    sightingDate: sightingDate,
+                    sightingLocation: sightingLocation
+                }
+            },
+            { upsert: false }
         )
     return result.modifiedCount === 1;
 }
@@ -282,7 +338,8 @@ async function insertNewUser(db, userID, numPosts, admin, numTotalComments, spec
     }
 
     const result = await db.collection("users").insertOne(newUser);
-    return {success: result.acknowledged,
+    return {
+        success: result.acknowledged,
         userID: userID
     }
 }
@@ -296,16 +353,19 @@ async function findUser(db, userID) {
 }
 
 //updates  user profile in the db given the userID
-async function updateUser(db, userID, numPosts, admin, numTotalComments, speciesSighted){
+async function updateUser(db, userID, numPosts, admin, numTotalComments, speciesSighted) {
     const result = await db.collection("users")
-    .updateOne({userID: userID}, 
-        {$set: {userID: userID,
-            numPosts: numPosts,
-            admin: admin,
-            numTotalComments: numTotalComments,
-            speciesSighted: speciesSighted}
-        }
-    )
+        .updateOne({ userID: userID },
+            {
+                $set: {
+                    userID: userID,
+                    numPosts: numPosts,
+                    admin: admin,
+                    numTotalComments: numTotalComments,
+                    speciesSighted: speciesSighted
+                }
+            }
+        )
     return result.modifiedCount === 1;
 }
 

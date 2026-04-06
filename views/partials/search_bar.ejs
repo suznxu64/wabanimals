@@ -5,20 +5,20 @@ Date: 3/30
 -->
 
 
-<nav >
+<nav>
     <form action="/search" method="GET">
         <label>Search:</label>
-        <input type="text" name="term" required>
+        <input type="text" name="term" required value="<%= typeof term !== 'undefined' ? term : '' %>"
+            placeholder="Enter search term">
 
         <label>Kind:</label>
-        <select name="kind">
-            <option value="">choose one</option>
-            <option value="species">species</option>
-            <option value="location">location</option>
-            <option value="date">date</option>
+        <select name="kind" required>
+            <option value="" <%=!kind ? 'selected' : '' %>>choose one</option>
+            <option value="species" <%=kind==='species' ? 'selected' : '' %>>species</option>
+            <option value="location" <%=kind==='location' ? 'selected' : '' %>>location</option>
+            <option value="date" <%=kind==='date' ? 'selected' : '' %>>date</option>
         </select>
 
         <button type="submit">Search</button>
     </form>
-
 </nav>
