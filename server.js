@@ -13,6 +13,7 @@ const cs304 = require('./cs304');
 const { add, result, find } = require('lodash');
 const flash = require('express-flash');
 const bcrypt = require('bcrypt');
+const counters = require('./counters');
 
 // Create and configure the app
 
@@ -47,7 +48,7 @@ const mongoUri = cs304.getMongoUri();
 const wabanimals_db = "wabanimals";
 const USERS = "users";
 const POSTS = "posts";
-let postIDCounter = 1;
+
 
 //home page results in the home ejs file
 app.get('/', (req, res) => {
@@ -199,6 +200,27 @@ function requiresLogin(req, res, next) {
     }
 }
 
+app.get('/profile', async (req, res) => {
+    try {
+        //make sure user is logged in
+        if (!req.session.logged_in) {
+            req.flash('error', 'Please log in first.');
+            return res.redirect('/');
+        }
+
+        const db = await Connection.open(mongoUri, wabanimals_db);
+
+        const userID = req.session.username;
+
+        const userProfile = await db.collection(USERS).findONE({userID: userID});
+        console.log("profile data: ", userProfile);
+        res.render("profile", {user: userProfile});
+    } catch (error) {
+        console.log(error);
+        res.redirect('/');
+    }
+});
+
 //post for submitting post form (sent from ejs)
 //creates a post database entry
 app.post("/submit-post-form", async (req, res) => {
@@ -239,6 +261,13 @@ app.post("/submit-post-form", async (req, res) => {
         //const userID = req.session.username;
         const userID = null;
 
+        //detect incomplete form
+        //ADD IMAGE LATER
+    if (!post_title || !species || !location || !sightingTime || !sightingDate ||!description){
+        req.flash('error', 'All fields are required');
+
+        return res.redirect('/')
+    } 
         //create new db entry in the posts collection 
         //postID determined from postIDCounter
         const result = await insertNewPost(db, userID, post_title, species, description, sightingDate, sightingTime, location);
@@ -260,15 +289,30 @@ app.post("/submit-post-form", async (req, res) => {
 });
 
 
+async function incr(counters, key) {
+    let result = await counters.findOneAndUpdate(
+        {collection: key},
+        {$inc: {counter: 1}}, 
+        {returnDocument: "after"}
+    );
+
+    if(result) {
+        return result.counter;
+    }
+}
+
 //inserts new post entry with inputted parameters, some from back end, some from form
 async function insertNewPost(db, userID, postTitle, species, description, sightingDate, sightingTime, sightingLocation) {
-    console.log("counter:", postIDCounter);
-    let currentpostID = postIDCounter;
-    console.log('currentPostId: ', currentpostID);
+
+    const counters = db.collection("counters");
+
+    const postID = await incr(counters, "posts")
+    console.log('currentPostId: ', postID);
 
     const newPost = {
         //created by us based on last postid used
-        postID: currentpostID,
+        postID: postID,
+        //CHANGE USERID WHEN LOGIN WORKS
         userID: null,
         postTitle: postTitle,
         species: species,
@@ -277,16 +321,14 @@ async function insertNewPost(db, userID, postTitle, species, description, sighti
         sightingTime: sightingTime,
         sightingLocation: sightingLocation
     }
-    //increment postid
-    postIDCounter++;
 
     console.log("newPost: ", newPost);
     const result = await db.collection("posts").insertOne(newPost);
     //return true when result is within the database
-    console.log("your postID is: ", currentpostID)
+    console.log("your postID is: ", postID)
     return {
         success: result.acknowledged,
-        postID: currentpostID
+        postID: postID
     };
 }
 
