@@ -11,19 +11,22 @@
 </head>
 
 <body>
+
 <%- include('partials/flash.ejs') %>
 
-<h2>Login:</h2>
-  <form action="/login" method="POST">
+<h2>Register:</h2>
+<p>
+  <form action="/join" method="POST">
       <label> Username
           <input type="text" name="username" placeholder="og102">
       </label>
       <label> Password
           <input type="text" name="password" placeholder="********">
       </label>
-    <button type="submit">login</button>
+    <button type="submit">register</button>
   </form>
-  <p>Don't have an account? <a href= "/register"> Register</a></p>
+</p>
+<p>Already have an account? <a href= "/login"> Login</a></p>
 
 </body>
 </html

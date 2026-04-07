@@ -12,6 +12,7 @@ const { Connection } = require('./connection');
 const cs304 = require('./cs304');
 const { add, result, find } = require('lodash');
 const flash = require('express-flash');
+const bcrypt = require('bcrypt');
 
 // Create and configure the app
 
@@ -111,15 +112,15 @@ app.get('/join', (req, res) => {
 
 app.post("/join", async (req, res) => {
     console.log("hello");
-    //try {
+    try {
     const username = req.body.username;
     const password = req.body.password;
     const db = await Connection.open(mongoUri, wabanimals_db);
     var existingUser = await db.collection(USERS).findOne({ username: username });
-    /* if (existingUser) {
+    if (existingUser) {
         req.flash('error', "Login already exists - please try logging in instead.");
         return res.redirect('/')
-    } */
+    }
     const hash = await bcrypt.hash(password, ROUNDS);
     await db.collection(USERS).insertOne({
         username: username,
@@ -135,11 +136,10 @@ app.post("/join", async (req, res) => {
     console.log("inserting userID ", result.userID, "into USERS: ", result)
 
     return res.redirect('/');
-    /* return res.redirect('/');
 } catch (error) {
     req.flash('error', `Form submission error: ${error}`);
     return res.redirect('/')
-} */
+} 
 });
 
 app.get('/login', (req, res) => {
