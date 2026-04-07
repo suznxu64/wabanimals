@@ -427,6 +427,9 @@ async function main() {
     //load wabanimals database
     const wabanimals_db = await Connection.open(mongoUri, 'wabanimals');
 
+    await counters.init(wabanimals_db.collection("counters"), "posts");
+
+    console.log("counters initialized");
     //inserting a post under ai106, postID = 1, 3 cute bunnies
     //const test_insert_post = await insertNewPost(wabanimals_db, 'ai106', 'three cute bunnies', 'rabbit', 'super cute bunnies!', '2026-03-26', '10:04 AM', 'Sev Green');
     //console.log("insertNewPost (test 3 bunnies): ", test_insert_post);
