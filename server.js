@@ -419,7 +419,7 @@ async function main() {
 
     await Connection.close();
 }
-//main().catch(console.error);
+main().catch(console.error);
 
 
 //--------------------------- last --------------------------------
