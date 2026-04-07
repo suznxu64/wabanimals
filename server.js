@@ -52,8 +52,7 @@ let postIDCounter = 1;
 //home page results in the home ejs file
 app.get('/', (req, res) => {
     res.render('home');
-})
-
+});
 
 //search route 
 app.get('/search', async (req, res) => {
@@ -77,9 +76,7 @@ app.get('/search', async (req, res) => {
         if (term && kind) {
             if (kind === "species") {
                 query.species = { $regex: term, $options: "i" };
-            } else if (kind === "location") {
-                query.sightingLocation = { $regex: term, $options: "i" };
-            } else if (kind === "date") {
+            }  else if (kind === "date") {
                 query.sightingDate = term;
             }
         }
@@ -376,6 +373,11 @@ async function deleteUser(db, userID) {
     //return true if one object was deleted
     return result.deletedCount === 1;
 }
+
+//upload route
+app.get("/upload", (req, res) => {
+    res.render("upload.ejs");
+});
 
 
 

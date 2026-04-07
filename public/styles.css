@@ -154,3 +154,19 @@ h1 + h3 {
     margin-bottom: 20px;
     color: #555;
 }
+
+/* Flashing  */
+#info {
+    color: #2a6f97;
+    font-style: italic;
+    font-size: 2em;
+    text-align: center;
+}
+
+#error {
+    color: darkred;
+    font-style: italic;
+    font-size: 2em;
+    text-align: center;
+}
+

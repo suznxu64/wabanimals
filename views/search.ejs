@@ -17,47 +17,48 @@ Date: 3/30
 
 
 <body>
+
     <!--include navbar -->
+
     <%- include('partials/navbar') %>
-        <h1>Wabanimals Search</h1>
+        <div class="content">
+            <h1>Wabanimals Search</h1>
 
-        <!--include  seach bar -->
-        <%- include('partials/search_bar') %>
+            <!--include  seach bar -->
+            <%- include('partials/search_bar') %>
 
-            <% if (results===null) { %>
-                <p>Use the search bar above to find animal sightings.</p>
-                <% } else { %>
+                <% if (results===null) { %>
+                    <h3>Use the search bar above to filter animal sightings by species and by location on campus.</h3>
+                    <% } else { %>
 
-                    <h2>Results for "<%= term %>"</h2>
+                        <h3>Results for "<%= term %>"</h3>
 
-                    <% if (results.length===0) { %>
-                        <p>No results found.</p>
-                        <% } %>
+                        <% if (results.length===0) { %>
+                            <p>No results found.</p>
+                            <% } %>
 
-                            <% results.forEach(post=> { %>
-                                <div class="card">
-                                    <div class="card-content">
-                                        <div class="text">
-                                            <h2 class="post-title">
-                                                <%= post.postTitle %>
-                                            </h2>
-                                            <p class="post-text"><strong>Species:</strong>
-                                                <%= post.species %>
-                                            </p>
-                                            <p class="post-text"><strong>Location:</strong>
-                                                <%= post.sightingLocation %>
-                                            </p>
-                                            <p class="post-text"><strong>Date:</strong>
-                                                <%= post.sightingDate %>
-                                            </p>
-                                            <p class="post-text">
-                                                <%= post.description %>
-                                            </p>
+                                <% results.forEach(post=> { %>
+                                    <div class="card">
+                                        <div class="card-content">
+                                            <div class="text">
+                                                <h2 class="post-title">
+                                                    <%= post.postTitle %>
+                                                </h2>
+                                                <p class="post-text"><strong>Species:</strong>
+                                                    <%= post.species %>
+                                                </p>
+                                                <p class="post-text"><strong>Location:</strong>
+                                                    <%= post.sightingLocation %>
+                                                </p>
+                                                <p class="post-text">
+                                                    <%= post.description %>
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <% }) %>
-                                    <% } %>
+                                    <% }) %>
+                                        <% } %>
+        </div>
 </body>
 
 </html>
