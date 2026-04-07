@@ -13,6 +13,7 @@ const cs304 = require('./cs304');
 const { add, result, find } = require('lodash');
 const flash = require('express-flash');
 const bcrypt = require('bcrypt');
+const ROUNDS = 15;
 
 // Create and configure the app
 
@@ -106,42 +107,37 @@ app.get('/search', async (req, res) => {
 });
 
 //register form
-app.get('/join', (req, res) => {
-    res.render('sign_up');
+app.get('/register', (req, res) => {
+    res.render('register');
 });
 
-app.post("/join", async (req, res) => {
-    console.log("hello");
+app.post('/register', async (req, res) => {
     try {
-    const username = req.body.username;
-    const password = req.body.password;
-    const db = await Connection.open(mongoUri, wabanimals_db);
-    var existingUser = await db.collection(USERS).findOne({ username: username });
-    if (existingUser) {
-        req.flash('error', "Login already exists - please try logging in instead.");
+        const username = req.body.username;
+        const password = req.body.password;
+        const db = await Connection.open(mongoUri, wabanimals_db);
+        var existingUser = await db.collection(USERS).findOne({username: username});
+        if (existingUser) {
+          req.flash('error', "Login already exists - please try logging in instead.");
+          return res.redirect('/')
+        }
+        const hash = await bcrypt.hash(password, ROUNDS);
+        await db.collection(USERS).insertOne({
+            username: username,
+            hash: hash
+        });
+        console.log('successfully joined', username, password, hash);
+        req.flash('info', 'successfully joined and logged in as ' + username);
+        req.session.username = username;
+        req.session.logged_in = true;
+        return res.redirect('/');
+      } catch (error) {
+        req.flash('error', `Form submission error: ${error}`);
         return res.redirect('/')
-    }
-    const hash = await bcrypt.hash(password, ROUNDS);
-    await db.collection(USERS).insertOne({
-        username: username,
-        hash: hash
-    });
-    console.log('successfully joined', username, password, hash);
-    req.flash('info', 'successfully joined and logged in as ' + username);
-    req.session.username = username;
-    req.session.logged_in = true;
-
-    //inserting new user with given username but no data in the app
-    const result = await insertNewUser(wabanimals_db, username, 0, false, 0, []);
-    console.log("inserting userID ", result.userID, "into USERS: ", result)
-
-    return res.redirect('/');
-} catch (error) {
-    req.flash('error', `Form submission error: ${error}`);
-    return res.redirect('/')
-} 
+      }
 });
 
+//login form (need to make password covered)
 app.get('/login', (req, res) => {
     res.render('login');
 });
@@ -150,7 +146,7 @@ app.post("/login", async (req, res) => {
     try {
         const username = req.body.username;
         const password = req.body.password;
-        const db = await Connection.open(mongoUri, DBNAME);
+        const db = await Connection.open(mongoUri, wabanimals_db);
         var existingUser = await db.collection(USERS).findOne({ username: username });
         console.log('user', existingUser);
         if (!existingUser) {
@@ -167,7 +163,7 @@ app.post("/login", async (req, res) => {
         req.session.username = username;
         req.session.logged_in = true;
         console.log('login as', username);
-        return res.redirect('/hello');
+        return res.redirect('/');
     } catch (error) {
         req.flash('error', `Form submission error: ${error}`);
         return res.redirect('/')
@@ -175,7 +171,7 @@ app.post("/login", async (req, res) => {
 });
 
 app.get('/logout', (req, res) => {
-    res.render('logout');
+    res.redirect('/');
 });
 
 app.post('/logout', (req, res) => {
@@ -186,7 +182,7 @@ app.post('/logout', (req, res) => {
         return res.redirect('/');
     } else {
         req.flash('error', 'You are not logged in - please do so.');
-        return res.render('sign_up');
+        return res.render('login');
     }
 });
 
