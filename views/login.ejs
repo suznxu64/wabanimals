@@ -13,17 +13,17 @@
 <body>
 <%- include('partials/flash.ejs') %>
 
-<h2>Login:</h2>
-  <form action="/login" method="POST">
+<h1 class = "form-template" >Login:</h1>
+  <form class = "form-template" action = "/login" method="POST">
       <label> Username
           <input type="text" name="username" placeholder="og102">
       </label>
       <label> Password
           <input type="text" name="password" placeholder="********">
       </label>
-    <button type="submit">login</button>
+    <button type="submit">Login</button>
   </form>
-  <p>Don't have an account? <a href= "/register"> Register</a></p>
+  <h2 class = "form-template" >Don't have an account? <a href= "/register"> Register</a></h2>
 
 </body>
 </html
