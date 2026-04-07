@@ -16,25 +16,48 @@ Date: 3/30
 </head>
 
 
-
-
 <body>
-    <!--include search bar form-->
-    <%- include('partials/search_bar') %>
+    <!--include navbar -->
+    <%- include('partials/navbar') %>
         <h1>Wabanimals Search</h1>
 
-        <!--Personalized example links-->
-        <ul>
-            <li>
-                An example of an animal search:
-                <a href="//">Goose</a>
-            </li>
-            <li>
-                An example of a location search"
-                <a href="//">Munger Meadow</a>
-            </li>
-        </ul>
+        <!--include  seach bar -->
+        <%- include('partials/search_bar') %>
 
+            <% if (results===null) { %>
+                <p>Use the search bar above to find animal sightings.</p>
+                <% } else { %>
+
+                    <h2>Results for "<%= term %>"</h2>
+
+                    <% if (results.length===0) { %>
+                        <p>No results found.</p>
+                        <% } %>
+
+                            <% results.forEach(post=> { %>
+                                <div class="card">
+                                    <div class="card-content">
+                                        <div class="text">
+                                            <h2 class="post-title">
+                                                <%= post.postTitle %>
+                                            </h2>
+                                            <p class="post-text"><strong>Species:</strong>
+                                                <%= post.species %>
+                                            </p>
+                                            <p class="post-text"><strong>Location:</strong>
+                                                <%= post.sightingLocation %>
+                                            </p>
+                                            <p class="post-text"><strong>Date:</strong>
+                                                <%= post.sightingDate %>
+                                            </p>
+                                            <p class="post-text">
+                                                <%= post.description %>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <% }) %>
+                                    <% } %>
 </body>
 
 </html>
