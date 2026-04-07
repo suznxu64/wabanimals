@@ -122,16 +122,19 @@ app.post('/register', async (req, res) => {
           return res.redirect('/')
         }
         const hash = await bcrypt.hash(password, ROUNDS);
-        await db.collection(USERS).insertOne({
-            username: username,
-            hash: hash
-        });
-        console.log('successfully joined', username, password, hash);
-        req.flash('info', 'successfully joined and logged in as ' + username);
+        const result = await insertNewUser(wabanimals_db, username, hash, 0, false, 0, [])
+    
+        if (result){
+            console.log('successfully joined', username, password, hash);
+            req.flash('info', 'successfully joined and logged in as ' + username);
+        }
+        
+
         req.session.username = username;
         req.session.logged_in = true;
         return res.redirect('/');
       } catch (error) {
+        console.log(error);
         req.flash('error', `Form submission error: ${error}`);
         return res.redirect('/')
       }
@@ -264,10 +267,9 @@ app.post("/submit-post-form", async (req, res) => {
         return res.redirect('/')
     } 
         //create new db entry in the posts collection 
-        //postID determined from postIDCounter
+        //postID determined from counters
         const result = await insertNewPost(db, userID, post_title, species, description, sightingDate, sightingTime, location);
         console.log("inserting postID ", result.postID, "into POSTS: ", result)
-
 
         //insert a flash here saying your post has been uploaded?
         if (result) {
@@ -365,16 +367,17 @@ async function deletePost(db, postID) {
 
 
 //inserts new user entry with the inputted parameters
-async function insertNewUser(db, userID, numPosts, admin, numTotalComments, speciesSighted) {
+async function insertNewUser(db, userID, hash, numPosts, admin, numTotalComments, speciesSighted) {
     const newUser = {
         userID: userID,
+        hash: hash,
         numPosts: numPosts,
         admin: admin,
         numTotalComments: numTotalComments,
         speciesSighted: speciesSighted
     }
 
-    const result = await db.collection("users").insertOne(newUser);
+    const result = await db.collection(USERS).insertOne(newUser);
     return {
         success: result.acknowledged,
         userID: userID
