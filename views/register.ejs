@@ -14,19 +14,19 @@
 
 <%- include('partials/flash.ejs') %>
 
-<h2>Register:</h2>
+<h1 class = "form-template" >Register:</h1>
 <p>
-  <form action="/join" method="POST">
+  <form class = "form-template" action="/register" method="POST">
       <label> Username
           <input type="text" name="username" placeholder="og102">
       </label>
       <label> Password
           <input type="text" name="password" placeholder="********">
       </label>
-    <button type="submit">register</button>
+    <button type="submit">Register</button>
   </form>
 </p>
-<p>Already have an account? <a href= "/login"> Login</a></p>
+<h2 class = "form-template" >Already have an account? <a href= "/login"> Login</a></h2>
 
 </body>
 </html

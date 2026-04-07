@@ -14,6 +14,10 @@ const { add, result, find } = require('lodash');
 const flash = require('express-flash');
 const bcrypt = require('bcrypt');
 
+const counters = require('./counters');
+
+const ROUNDS = 15;
+
 // Create and configure the app
 
 const app = express();
@@ -47,7 +51,7 @@ const mongoUri = cs304.getMongoUri();
 const wabanimals_db = "wabanimals";
 const USERS = "users";
 const POSTS = "posts";
-let postIDCounter = 1;
+
 
 //home page results in the home ejs file
 app.get('/', (req, res) => {
@@ -103,42 +107,37 @@ app.get('/search', async (req, res) => {
 });
 
 //register form
-app.get('/join', (req, res) => {
-    res.render('sign_up');
+app.get('/register', (req, res) => {
+    res.render('register');
 });
 
-app.post("/join", async (req, res) => {
-    console.log("hello");
+app.post('/register', async (req, res) => {
     try {
-    const username = req.body.username;
-    const password = req.body.password;
-    const db = await Connection.open(mongoUri, wabanimals_db);
-    var existingUser = await db.collection(USERS).findOne({ username: username });
-    if (existingUser) {
-        req.flash('error', "Login already exists - please try logging in instead.");
+        const username = req.body.username;
+        const password = req.body.password;
+        const db = await Connection.open(mongoUri, wabanimals_db);
+        var existingUser = await db.collection(USERS).findOne({username: username});
+        if (existingUser) {
+          req.flash('error', "Login already exists - please try logging in instead.");
+          return res.redirect('/')
+        }
+        const hash = await bcrypt.hash(password, ROUNDS);
+        await db.collection(USERS).insertOne({
+            username: username,
+            hash: hash
+        });
+        console.log('successfully joined', username, password, hash);
+        req.flash('info', 'successfully joined and logged in as ' + username);
+        req.session.username = username;
+        req.session.logged_in = true;
+        return res.redirect('/');
+      } catch (error) {
+        req.flash('error', `Form submission error: ${error}`);
         return res.redirect('/')
-    }
-    const hash = await bcrypt.hash(password, ROUNDS);
-    await db.collection(USERS).insertOne({
-        username: username,
-        hash: hash
-    });
-    console.log('successfully joined', username, password, hash);
-    req.flash('info', 'successfully joined and logged in as ' + username);
-    req.session.username = username;
-    req.session.logged_in = true;
-
-    //inserting new user with given username but no data in the app
-    const result = await insertNewUser(wabanimals_db, username, 0, false, 0, []);
-    console.log("inserting userID ", result.userID, "into USERS: ", result)
-
-    return res.redirect('/');
-} catch (error) {
-    req.flash('error', `Form submission error: ${error}`);
-    return res.redirect('/')
-} 
+      }
 });
 
+//login form (need to make password covered)
 app.get('/login', (req, res) => {
     res.render('login');
 });
@@ -147,7 +146,7 @@ app.post("/login", async (req, res) => {
     try {
         const username = req.body.username;
         const password = req.body.password;
-        const db = await Connection.open(mongoUri, DBNAME);
+        const db = await Connection.open(mongoUri, wabanimals_db);
         var existingUser = await db.collection(USERS).findOne({ username: username });
         console.log('user', existingUser);
         if (!existingUser) {
@@ -164,7 +163,7 @@ app.post("/login", async (req, res) => {
         req.session.username = username;
         req.session.logged_in = true;
         console.log('login as', username);
-        return res.redirect('/hello');
+        return res.redirect('/');
     } catch (error) {
         req.flash('error', `Form submission error: ${error}`);
         return res.redirect('/')
@@ -172,7 +171,7 @@ app.post("/login", async (req, res) => {
 });
 
 app.get('/logout', (req, res) => {
-    res.render('logout');
+    res.redirect('/');
 });
 
 app.post('/logout', (req, res) => {
@@ -183,7 +182,7 @@ app.post('/logout', (req, res) => {
         return res.redirect('/');
     } else {
         req.flash('error', 'You are not logged in - please do so.');
-        return res.render('sign_up');
+        return res.render('login');
     }
 });
 
@@ -195,6 +194,27 @@ function requiresLogin(req, res, next) {
         next();
     }
 }
+
+app.get('/profile', async (req, res) => {
+    try {
+        //make sure user is logged in
+        if (!req.session.logged_in) {
+            req.flash('error', 'Please log in first.');
+            return res.redirect('/');
+        }
+
+        const db = await Connection.open(mongoUri, wabanimals_db);
+
+        const userID = req.session.username;
+
+        const userProfile = await db.collection(USERS).findONE({userID: userID});
+        console.log("profile data: ", userProfile);
+        res.render("profile", {user: userProfile});
+    } catch (error) {
+        console.log(error);
+        res.redirect('/');
+    }
+});
 
 //post for submitting post form (sent from ejs)
 //creates a post database entry
@@ -236,6 +256,13 @@ app.post("/submit-post-form", async (req, res) => {
         //const userID = req.session.username;
         const userID = null;
 
+        //detect incomplete form
+        //ADD IMAGE LATER
+    if (!post_title || !species || !location || !sightingTime || !sightingDate ||!description){
+        req.flash('error', 'All fields are required');
+
+        return res.redirect('/')
+    } 
         //create new db entry in the posts collection 
         //postID determined from postIDCounter
         const result = await insertNewPost(db, userID, post_title, species, description, sightingDate, sightingTime, location);
@@ -257,15 +284,30 @@ app.post("/submit-post-form", async (req, res) => {
 });
 
 
+async function incr(counters, key) {
+    let result = await counters.findOneAndUpdate(
+        {collection: key},
+        {$inc: {counter: 1}}, 
+        {returnDocument: "after"}
+    );
+
+    if(result) {
+        return result.counter;
+    }
+}
+
 //inserts new post entry with inputted parameters, some from back end, some from form
 async function insertNewPost(db, userID, postTitle, species, description, sightingDate, sightingTime, sightingLocation) {
-    console.log("counter:", postIDCounter);
-    let currentpostID = postIDCounter;
-    console.log('currentPostId: ', currentpostID);
+
+    const counters = db.collection("counters");
+
+    const postID = await incr(counters, "posts")
+    console.log('currentPostId: ', postID);
 
     const newPost = {
         //created by us based on last postid used
-        postID: currentpostID,
+        postID: postID,
+        //CHANGE USERID WHEN LOGIN WORKS
         userID: null,
         postTitle: postTitle,
         species: species,
@@ -274,16 +316,14 @@ async function insertNewPost(db, userID, postTitle, species, description, sighti
         sightingTime: sightingTime,
         sightingLocation: sightingLocation
     }
-    //increment postid
-    postIDCounter++;
 
     console.log("newPost: ", newPost);
     const result = await db.collection("posts").insertOne(newPost);
     //return true when result is within the database
-    console.log("your postID is: ", currentpostID)
+    console.log("your postID is: ", postID)
     return {
         success: result.acknowledged,
-        postID: currentpostID
+        postID: postID
     };
 }
 
@@ -387,6 +427,9 @@ async function main() {
     //load wabanimals database
     const wabanimals_db = await Connection.open(mongoUri, 'wabanimals');
 
+    await counters.init(wabanimals_db.collection("counters"), "posts");
+
+    console.log("counters initialized");
     //inserting a post under ai106, postID = 1, 3 cute bunnies
     //const test_insert_post = await insertNewPost(wabanimals_db, 'ai106', 'three cute bunnies', 'rabbit', 'super cute bunnies!', '2026-03-26', '10:04 AM', 'Sev Green');
     //console.log("insertNewPost (test 3 bunnies): ", test_insert_post);

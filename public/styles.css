@@ -20,7 +20,7 @@ h1, h2, h3 {
 
 a {
     text-decoration: none;
-    color: inherit;
+    color: rgb(53, 155, 210);
 }
 
 /* Navbar */
@@ -63,7 +63,7 @@ a {
 }
 
 /* Form styling */
-.post {
+.form-template {
     background-color: #ffffff;
     border-radius: 12px;
     padding: 20px 25px;
@@ -74,15 +74,15 @@ a {
     margin-right: auto;
 }
 
-.post label {
+.form-template label {
     display: block;
     margin-bottom: 12px;
     font-weight: 500;
 }
 
-.post input, 
-.post select, 
-.post textarea {
+.form-template input, 
+.form-template select, 
+.form-template textarea {
     width: 100%;
     padding: 8px 10px;
     margin-top: 4px;
@@ -91,7 +91,7 @@ a {
     font-size: 0.95rem;
 }
 
-.post button {
+.form-template button {
     padding: 10px 18px;
     margin-top: 10px;
     background-color: #1b4332; 
@@ -102,8 +102,16 @@ a {
     font-size: 1rem;
 }
 
-.post button:hover {
+.form-template button:hover {
     background-color: #2d6a4f;
+}
+
+.form-template h1 {
+    text-align: center;
+}
+
+.form-template h2 {
+    text-align: center;
 }
 
 /* Feed cards */
