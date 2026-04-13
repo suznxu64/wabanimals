@@ -24,38 +24,89 @@ Date:
     <!-- Navbar -->
     <%- include('partials/navbar.ejs') %>
 
-    <%- include('partials/flash.ejs') %>
+        <%- include('partials/flash.ejs') %>
 
-    
 
-    <!-- Main content container -->
-    <div class="content">
 
-        <!-- Intro text -->
-        <h1>Welcome to Wabanimals!</h1>
-        <h3>
-            Wabanimals is a animal sighting platform for Wellesley College.
-            Post the animals you've seen around campus using the "Upload" tab, and explore sightings from 
-            others on our community feed.
-        </h3>
+            <!-- Main content container -->
+            <div class="content">
 
-            <!-- Feed header -->
-            <h1>The Community Feed</h1>
-            <h3>Recent Wellesley College animal sightings:</h3>
+                <!-- Intro text -->
+                <h1>Welcome to Wabanimals!</h1>
+                <h3>
+                    Wabanimals is a platform dedicated to animal sightings at Wellesley College. <br><br>
+                    Post the animals you've seen around campus using the "Upload" tab in the navigation bar, and explore
+                    sightings from
+                    others on our community feed. <br><br>
+                    Only want to see specific types of posts? Use our "Search"
+                    tab to filter by animal or location sighted.
+                </h3>
 
-            <!-- Example post card -->
-            <div class="card">
-                <div class="card-content">
-                    <div class="text">
-                        <h2 class="post-title">Three Cute Bunnies</h2>
-                        <p class="post-text">Spotted on Severance Green this morning.</p>
-                        <p class="post-text">They were hopping around together.</p>
-                    </div>
-                    <img class="post-img" src="/bunny.jpeg" alt="Bunny">
-                </div>
+                <!-- Feed header -->
+                <h1>The Community Feed</h1>
+                <h3>Recent Wellesley College animal sightings:</h3>
+
+
+                <!-- COMMUNITY FEED: dynamically renders posts from MongoDB -->
+                <!-- 'posts' is passed in from the '/' route in server.js -->
+
+
+                <% if (posts && posts.length> 0) { %>
+
+                    <% posts.forEach(post=> { %>
+                        <div class="card">
+                            <div class="card-content">
+
+                                <!-- Text content of the post -->
+                                <div class="text">
+                                    <h2 class="post-title">
+                                        <%= post.postTitle %>
+                                    </h2>
+
+                                    <p class="post-text">
+                                        <strong>Posted on:</strong>
+                                        <% if (post.createdAt) { %>
+                                            <%= new Date(post.createdAt).toLocaleDateString() %>
+                                                <% } else { %>
+                                                    Unknown time
+                                                    <% } %>
+                                    </p>
+
+                                    <p class="post-text">
+                                        <strong>Species:</strong>
+                                        <%= post.species %>
+                                    </p>
+
+                                    <p class="post-text">
+                                        <strong>Location:</strong>
+                                        <%= post.sightingLocation %>
+                                    </p>
+
+                                    <p class="post-text">
+                                        <strong>Date:</strong>
+                                        <%= post.sightingDate %> at <%= post.sightingTime %>
+                                    </p>
+
+                                    <p class="post-text">
+                                        <%= post.description %>
+                                    </p>
+                                </div>
+
+                                <!-- Placeholder image (since you're not doing uploads yet) -->
+                                <img class="post-img" src="/bunny.jpeg" alt="Animal image">
+
+                            </div>
+                        </div>
+                        <% }) %>
+
+                            <% } else { %>
+
+                                <!-- Message when no posts exist yet -->
+                                <p>No sightings yet. Be the first to upload one!</p>
+
+                                <% } %>
+
             </div>
-
-    </div> <!-- End content -->
 
 </body>
 

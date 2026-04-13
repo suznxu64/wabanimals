@@ -53,9 +53,33 @@ const USERS = "users";
 const POSTS = "posts";
 
 
-//home page results in the home ejs file
-app.get('/', (req, res) => {
-    res.render('home');
+
+// HOME FEED ROUTE
+// Displays all posts on the homepage (feed)
+app.get('/', async (req, res) => {
+    try {
+       
+        const db = await Connection.open(mongoUri, wabanimals_db);
+
+        // get all posts from the posts collection
+        // Sort by postID descending so newest posts appear first
+        const posts = await db.collection(POSTS)
+            .find({})
+            .sort({ createdAt: -1 })
+            .toArray();
+
+        // Render home.ejs and pass posts into the template
+        res.render('home', {
+            posts: posts
+        });
+
+    } catch (error) {
+        console.error("Error loading homepage feed:", error);
+
+        // error by rendering page with no posts
+        req.flash('error', 'Unable to load posts at this time.');
+        res.render('home', { posts: [] });
+    }
 });
 
 //search route 
@@ -190,7 +214,7 @@ app.post('/logout', (req, res) => {
 });
 
 function requiresLogin(req, res, next) {
-    if (!req.session.loggedIn) {
+    if (!req.session.logged_in) {
         req.flash('error', 'This page requires you to be logged in - please do so.');
         return res.redirect("/");
     } else {
@@ -316,7 +340,8 @@ async function insertNewPost(db, userID, postTitle, species, description, sighti
         description: description,
         sightingDate: sightingDate,
         sightingTime: sightingTime,
-        sightingLocation: sightingLocation
+        sightingLocation: sightingLocation,
+        createdAt: new Date()
     }
 
     console.log("newPost: ", newPost);
