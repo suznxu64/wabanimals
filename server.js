@@ -104,8 +104,8 @@ app.get('/search', async (req, res) => {
         if (term && kind) {
             if (kind === "species") {
                 query.species = { $regex: term, $options: "i" };
-            }  else if (kind === "date") {
-                query.sightingDate = term;
+            }  else if (kind === "location") {
+                query.sightingLocation = { $regex: term, $options: "i" };
             }
         }
 
@@ -247,6 +247,7 @@ app.get('/profile', async (req, res) => {
 app.get('/about', async(req, res) => {
     return res.render('about');
 })
+
 //post for submitting post form (sent from ejs)
 //creates a post database entry
 app.post("/submit-post-form", async (req, res) => {
