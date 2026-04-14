@@ -1,4 +1,6 @@
 
+//code from scott's counter code
+
 async function get(counters, key) {
     let docs = await counters.find({collection: key}).toArray();
     let n = docs.length;

@@ -36,8 +36,10 @@ app.use(cs304.logRequestData);  // tell the user about any request data
 app.use(serveStatic('public'));
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
+//inserting flash
 app.use(flash());
 
+//automatic cookiesession
 app.use(cookieSession({
     name: 'session',
     keys: [cs304.randomString(20)],
@@ -54,8 +56,11 @@ const POSTS = "posts";
 
 
 
-// HOME FEED ROUTE
-// Displays all posts on the homepage (feed)
+/*
+* This / endpoint is a GET route that displays all posts from the database POSTS collection
+on a home page feed, ordered from most recently posted at the top to oldest at the bottom.
+Home page also includes some introductory page to the site. 
+*/
 app.get('/', async (req, res) => {
     try {
        
@@ -65,7 +70,7 @@ app.get('/', async (req, res) => {
         // Sort by postID descending so newest posts appear first
         const posts = await db.collection(POSTS)
             .find({})
-            .sort({ createdAt: -1 })
+            .sort({ createdAt: -1 }) //sort in order of most recently created
             .toArray();
 
         // Render home.ejs and pass posts into the template
@@ -74,22 +79,25 @@ app.get('/', async (req, res) => {
         });
 
     } catch (error) {
+        //prints to the console if there is an error
         console.error("Error loading homepage feed:", error);
 
-        // error by rendering page with no posts
+        // if there is error, also renders a page with no posts and flashes a message
         req.flash('error', 'Unable to load posts at this time.');
         res.render('home', { posts: [] });
     }
 });
 
-//search route 
+/*
+* This /search endpoint is a GET 
+*/
 app.get('/search', async (req, res) => {
 
     try {
         const term = req.query.term;
         const kind = req.query.kind;
 
-        // if no search yet, render empty page
+        // if there has not been a search yet, render empty page
         if (!term || !kind) {
             return res.render('search', {
                 results: null,
@@ -97,30 +105,36 @@ app.get('/search', async (req, res) => {
                 kind: ""
             });
         }
-        const db = await Connection.open(mongoUri, wabanimals_db);
+        const db = await Connection.open(mongoUri, wabanimals_db); //open database
 
-        let query = {};
+        let query = {}; //initialize query 
+
 
         if (term && kind) {
-            if (kind === "species") {
+            //if the user searches by species, search the database by species using regular expression
+            if (kind === "species") { 
                 query.species = { $regex: term, $options: "i" };
+                //if the user searches by location, search the database by location using regular expression
             }  else if (kind === "location") {
                 query.sightingLocation = { $regex: term, $options: "i" };
             }
         }
 
         const results = await db.collection("posts").find(query).toArray();
-        //flash errors
+
+        //flash errors if there are no matches to the search term 
         if (results.length === 0) {
             req.flash('info', `No results found for "${term}" in ${kind}.`);
         }
 
+        //render results to search ejs page
         res.render("search", {
             results: results,
             term: term,
             kind: kind
         });
 
+    //print to console error and flash error and redirect to search page if there is another type of error
     } catch (err) {
         console.error("Search error:", err);
         req.flash('error', "Search failed: " + err.message);
@@ -130,22 +144,30 @@ app.get('/search', async (req, res) => {
 
 });
 
-//register form
+/*
+* This endpoint renders the register.ejs.
+*/
 app.get('/register', (req, res) => {
     res.render('register');
 });
 
+/*
+* This endpoint takes in the information from the form, creating a new user if the user does not exist in the
+* USERS document. If the user already exists, then flashes an error on screen, indicating to user that they should login.
+*/
 app.post('/register', async (req, res) => {
     try {
         const username = req.body.username;
         const password = req.body.password;
         const db = await Connection.open(mongoUri, wabanimals_db);
         var existingUser = await db.collection(USERS).findOne({username: username});
+        //flashes an error if user exists
         if (existingUser) {
           req.flash('error', "Login already exists - please try logging in instead.");
           return res.redirect('/')
         }
         const hash = await bcrypt.hash(password, ROUNDS);
+        //inserts new user
         const result = await insertNewUser(db, username, hash, 0, false, 0, [])
     
         if (result){
@@ -164,11 +186,18 @@ app.post('/register', async (req, res) => {
       }
 });
 
-//login form (need to make password covered)
+/*
+* This endpoint renders the login.ejs.
+*/
 app.get('/login', (req, res) => {
     res.render('login');
 });
 
+/*
+* This endpoint takes in the information from the form, logging the user into their account if it exists in the USERS document.
+* If user does not exist or information is incorrect, then flashes an error indicating said issue to user. Redirects user to
+* home page.
+*/
 app.post("/login", async (req, res) => {
     try {
         const username = req.body.username;
@@ -180,6 +209,7 @@ app.post("/login", async (req, res) => {
             req.flash('error', "Username does not exist - try again.");
             return res.redirect('/')
         }
+        //finds account in USERS document; if match exists logs in, if not, flashes an error and redirects
         const match = await bcrypt.compare(password, existingUser.hash);
         console.log('match', match);
         if (!match) {
@@ -197,10 +227,16 @@ app.post("/login", async (req, res) => {
     }
 });
 
+/*
+* This endpoint sends to the logout post.
+*/
 app.get('/logout', (req, res) => {
     res.render('logout');
 });
 
+/*
+* This endpoint logs the user out of their account and flashes an error if the user attempts to log out but is not logged in.
+*/
 app.post('/logout', (req, res) => {
     if (req.session.username) {
         req.session.username = null;
@@ -213,15 +249,7 @@ app.post('/logout', (req, res) => {
     }
 });
 
-function requiresLogin(req, res, next) {
-    if (!req.session.logged_in) {
-        req.flash('error', 'This page requires you to be logged in - please do so.');
-        return res.redirect("/");
-    } else {
-        next();
-    }
-}
-
+//first draft of profile - not working yet!
 app.get('/profile', async (req, res) => {
     try {
         //make sure user is logged in
@@ -232,8 +260,10 @@ app.get('/profile', async (req, res) => {
 
         const db = await Connection.open(mongoUri, wabanimals_db);
 
+        //get userid from session info
         const userID = req.session.username;
 
+        //find user information from the collection
         const userProfile = await db.collection(USERS).findONE({userID: userID});
         console.log("profile data: ", userProfile);
         res.render("profile", {user: userProfile});
@@ -243,7 +273,7 @@ app.get('/profile', async (req, res) => {
     }
 });
 
-//renders about page
+//renders about page through a GET route with basic exposition information
 app.get('/about', async(req, res) => {
     return res.render('about');
 })
@@ -314,14 +344,16 @@ app.post("/submit-post-form", async (req, res) => {
 
 });
 
-
+//increment function from scott's code for use in postID
 async function incr(counters, key) {
     let result = await counters.findOneAndUpdate(
         {collection: key},
+        //increment the counter
         {$inc: {counter: 1}}, 
         {returnDocument: "after"}
     );
 
+    //return new counter number
     if(result) {
         return result.counter;
     }
@@ -336,10 +368,9 @@ async function insertNewPost(db, userID, postTitle, species, description, sighti
     console.log('currentPostId: ', postID);
 
     const newPost = {
-        //created by us based on last postid used
+        //all information from the parameters
         postID: postID,
-        //CHANGE USERID WHEN LOGIN WORKS
-        userID: null,
+        userID: userID,
         postTitle: postTitle,
         species: species,
         description: description,
@@ -351,7 +382,7 @@ async function insertNewPost(db, userID, postTitle, species, description, sighti
 
     console.log("newPost: ", newPost);
     const result = await db.collection("posts").insertOne(newPost);
-    //return true when result is within the database
+    //return true when result is within the database and returns postid to find later
     console.log("your postID is: ", postID)
     return {
         success: result.acknowledged,
@@ -367,14 +398,17 @@ async function findPost(db, postID) {
     return post;
 }
 
-// updates pet by searching for postID through database -- admin only
+// updates post by searching for postID through database -- admin only
 async function updatePost(db, postID, userID, postTitle, species, description, sightingDate, sightingTime, sightingLocation) {
     const result = await db.collection("posts")
         .updateOne(
+            //update based on postID
             { postID: postID },
             {
                 $set: {
-                    postID: postID, userID: userID,
+                    //all information from parameters
+                    postID: postID, 
+                    userID: userID,
                     postTitle: postTitle,
                     species: species,
                     description: description,
@@ -382,6 +416,7 @@ async function updatePost(db, postID, userID, postTitle, species, description, s
                     sightingLocation: sightingLocation
                 }
             },
+            //do not insert new post, they are in the wrong section!
             { upsert: false }
         )
     return result.modifiedCount === 1;
@@ -399,6 +434,7 @@ async function deletePost(db, postID) {
 //inserts new user entry with the inputted parameters
 async function insertNewUser(db, userID, hash, numPosts, admin, numTotalComments, speciesSighted) {
     const newUser = {
+        //all info from parameters - posts and comments and species initialized to 0
         userID: userID,
         hash: hash,
         numPosts: numPosts,
@@ -408,6 +444,7 @@ async function insertNewUser(db, userID, hash, numPosts, admin, numTotalComments
     }
 
     const result = await db.collection(USERS).insertOne(newUser);
+    //return true and userid to make it easier to find later
     return {
         success: result.acknowledged,
         userID: userID
@@ -425,9 +462,11 @@ async function findUser(db, userID) {
 //updates  user profile in the db given the userID
 async function updateUser(db, userID, numPosts, admin, numTotalComments, speciesSighted) {
     const result = await db.collection("users")
+    //search based on userid
         .updateOne({ userID: userID },
             {
                 $set: {
+                    //all information from the parameters 
                     userID: userID,
                     numPosts: numPosts,
                     admin: admin,
@@ -441,19 +480,19 @@ async function updateUser(db, userID, numPosts, admin, numTotalComments, species
 
 //deletes user by userID - only for admin
 async function deleteUser(db, userID) {
+    //search by userID
     const result = await db.collection("users").deleteOne({ userID: userID });
 
     //return true if one object was deleted
     return result.deletedCount === 1;
 }
 
-//upload route
+//upload form route
 app.get("/upload", (req, res) => {
     res.render("upload.ejs");
 });
 
-
-
+//used for testing
 async function main() {
     console.log('starting function check...\n');
 
