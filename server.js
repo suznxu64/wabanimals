@@ -146,7 +146,7 @@ app.post('/register', async (req, res) => {
           return res.redirect('/')
         }
         const hash = await bcrypt.hash(password, ROUNDS);
-        const result = await insertNewUser(wabanimals_db, username, hash, 0, false, 0, [])
+        const result = await insertNewUser(db, username, hash, 0, false, 0, [])
     
         if (result){
             console.log('successfully joined', username, password, hash);
@@ -174,7 +174,7 @@ app.post("/login", async (req, res) => {
         const username = req.body.username;
         const password = req.body.password;
         const db = await Connection.open(mongoUri, wabanimals_db);
-        var existingUser = await db.collection(USERS).findOne({ username: username });
+        var existingUser = await db.collection(USERS).findOne({ userID: username });
         console.log('user', existingUser);
         if (!existingUser) {
             req.flash('error', "Username does not exist - try again.");
@@ -198,7 +198,7 @@ app.post("/login", async (req, res) => {
 });
 
 app.get('/logout', (req, res) => {
-    res.redirect('/');
+    res.render('logout');
 });
 
 app.post('/logout', (req, res) => {
@@ -209,7 +209,7 @@ app.post('/logout', (req, res) => {
         return res.redirect('/');
     } else {
         req.flash('error', 'You are not logged in - please do so.');
-        return res.render('login');
+        return res.redirect('/login');
     }
 });
 
