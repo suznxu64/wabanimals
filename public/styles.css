@@ -24,6 +24,7 @@ a {
 }
 
 /* Navbar */
+
 .nav-bar {
     display: flex;
     justify-content: space-between;
@@ -49,18 +50,27 @@ a {
     font-weight: 600;
 }
 
-.logo-text {
-    font-family: 'Pacifico', cursive;
+.logo-text{
+    font-family: "Pacifico", cursive;
     font-size: 1.8rem;
-    color:#2a6f97
+    color: #2a6f97;
 }
-
 /* Main content */
 .content {
     max-width: 800px;
     margin: 40px auto;
     padding: 0 20px;
 }
+
+.content-container {
+    max-width: 600px;
+    margin: 6rem auto;
+    padding: 3rem;
+    text-align: center;
+    background: #fffdf9;
+    border-radius: 2px;
+    box-shadow: 0 2px 40px rgba(0,0,0,0.06);
+  }
 
 /* Form styling */
 .form-template {

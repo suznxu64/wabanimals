@@ -243,6 +243,10 @@ app.get('/profile', async (req, res) => {
     }
 });
 
+//renders about page
+app.get('/about', async(req, res) => {
+    return res.render('about');
+})
 //post for submitting post form (sent from ejs)
 //creates a post database entry
 app.post("/submit-post-form", async (req, res) => {
