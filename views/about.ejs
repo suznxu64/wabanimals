@@ -1,5 +1,5 @@
 <!--Documentation
-Author: Nivale 
+Author: Nivale, Suzy, Ari
 Description: about page
 Date: 
 -->
@@ -13,26 +13,19 @@ Date:
     <meta name="author" content="Ariana Inamdar, Suzy Xu, Nivale Baxendell">
     <!-- CSS -->
     <link rel="stylesheet" href="/styles.css">
-
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    
     <title>Wabanimals</title>
 </head>
 
 <body>
 
     <!-- Navbar -->
-    <div class="nav-bar">
-        <h1 class="logo-text">Wabanimals</h1>
-        <ul>
-            <li><a href="/">Home</a></li>
-            <li><a href="#search">Search</a></li>
-            <li><a href="#about">About</a></li>
-            <li><a href="#upload">Upload</a></li>
-            <li><a href="#profile">Profile</a></li>
-        </ul>
-    </div>
+    <%- include('partials/navbar.ejs') %>
 
+    <%- include('partials/flash.ejs') %>
     <!-- Main content container -->
-    <div class="">
+    <div class="content-container">
 
         <!-- Intro text -->
         <h1>Our Story</h1>
