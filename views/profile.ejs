@@ -6,50 +6,41 @@
     <link rel="stylesheet" href="/styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
     </head>
+
+
 <body>
-    <div class="profile-card">
-        <h1><%= user.userID %>'s Profile</h1>
+            <%- include('partials/navbar.ejs') %>
+                        <%- include('partials/flash.ejs') %>
 
-        <div class="stats">
-            <div class="stat">
-                <h3>Posts</h3>
-                <p><%= user.numPosts %></p>
-            </div>
-            <div class="stat">
-                <h3>Total Comments</h3>
-                <p><%= user.numTotalComments %></p>
-            </div>
-            <div class="stat">
-                <h3>Admin</h3>
-                <p><%= user.admin ? "Yes" : "No" %></p>
+
+    <div class="profile-container">
+
+
+    <div class="profile-header">
+        <div class="profile-avatar"><%= user.userID[0].toUpperCase() %></div>
+        <div>
+            <div class="profile-username"><%=user.userID%></div>
+            <div class="profile-stats">
+                <div class="stat-box">
+                    <div class="stat-number"><%= user.numPosts %></div>
+                    <div class="stat-label">Posts</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number"><%= user.numTotalComments %></div>
+                    <div class="stat-label">Comments</div>
+                </div>
             </div>
         </div>
-
-        <div class="species">
-            <h3>Species Sighted</h3>
-            <% if (user.speciesSighted && user.speciesSighted.length > 0) { %>
-                <% user.speciesSighted.forEach(function(species) { %>
-                    <span><%= species %></span>
-                <% }) %>
-            <% } else { %>
-                <p>No species sighted yet.</p>
-            <% } %>
-        </div>
-
-        <% if (posts && posts.length > 0) { %>
-            <div class="posts">
-                <h3>Your Posts</h3>
-                <% posts.forEach(function(post) { %>
-                    <div class="post">
-                        <strong><%= post.postTitle %></strong> - <em><%= post.species %></em><br>
-                        <small>Sighted on <%= post.sightingDate %> at <%= post.sightingTime %></small><br>
-                        <p><%= post.description %></p>
-                    </div>
-                <% }) %>
-            </div>
-        <% } else { %>
-            <p>You have not posted anything yet.</p>
-        <% } %>
     </div>
+
+    <div class="profile-section">
+        <h2>Species Sighted</h2>
+        <div class="species-tags">
+            <% (user.speciesSighted ?? []).forEach(s => { %>
+    
+            <% }) %>
+        </div>
+    </div>
+</div>
 </body>
 </html>
