@@ -91,10 +91,12 @@ Date: Home page with introductory information and live post feed
                                         <%= post.description %>
                                     </p>
 
-                                    <form method="POST" action="/delete-post">
-                                <input type="hidden" name="postID" value="<%= post.postID %>">
-                                <button class="deleteBtn" type="submit">Delete Post</button>
-                            </form>
+                                    <% if (session.logged_in && session.username === post.userID) { %>
+                                        <form method="POST" action="/delete-post">
+                                            <input type="hidden" name="postID" value="<%= post.postID %>">
+                                            <button class="deleteBtn" type="submit">Delete Post</button>
+                                        </form>
+                                    <% } %>
                                 </div>
 
                                 <!-- Placeholder image (since you're not doing uploads yet) -->
