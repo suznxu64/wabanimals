@@ -90,6 +90,9 @@ Date: Home page with introductory information and live post feed
                                     <p class="post-text">
                                         <%= post.description %>
                                     </p>
+                                    <button class="likeBtn" type="button">
+                                    👍 like
+                                </button>
 
                                     <% if (session.logged_in && session.username === post.userID) { %>
                                         <form method="POST" action="/delete-post">
