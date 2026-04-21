@@ -188,3 +188,8 @@ h1 + h3 {
     text-align: center;
 }
 
+
+.deleteBtn{
+    background-color: rgb(232, 93, 93);
+    border-color: red;
+}
