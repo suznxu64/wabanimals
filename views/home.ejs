@@ -100,7 +100,11 @@ Date: Home page with introductory information and live post feed
                                     <p class="post-text">
                                         <%= post.description %>
                                     </p>
-
+                                     <% if (session.logged_in && session.username === post.userID) { %>
+                                        <a href="/update-post/<%= post.postID %>">
+                                            <button class="updateBtn">Update Post</button>
+                                        </a>
+                                    <% } %>
 
                                     <% if (session.logged_in && session.username===post.userID) { %>
                                         <form method="POST" action="/delete-post">
