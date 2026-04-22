@@ -254,7 +254,7 @@ app.post('/logout', (req, res) => {
     }
 });
 
-//first draft of profile - not working yet!
+
 app.get('/profile', async (req, res) => {
     try {
         //make sure user is logged in
@@ -433,6 +433,7 @@ async function updatePost(db, postID, userID, postTitle, species, description, s
                     species: species,
                     description: description,
                     sightingDate: sightingDate,
+                    sightingTime: sightingTime,
                     sightingLocation: sightingLocation
                 }
             },
@@ -441,6 +442,69 @@ async function updatePost(db, postID, userID, postTitle, species, description, s
         )
     return result.modifiedCount === 1;
 }
+
+app.get('/update-post/:postID', async (req, res) => {
+    if (!req.session.logged_in){
+        req.flash('error', 'You must be logged in.');
+        return res.redirect('/');
+    }
+
+    const db = await Connection.open(mongoUri, wabanimals_db);
+    const postID = parseInt(req.params.postID);
+    const post = await db.collection(POSTS).findOne({postID: postID});
+
+    if (!post) {
+        req.flash('error', 'Post not found');
+        return res.redirect('/');
+    }
+
+     if (post.userID!==req.session.username){
+        req.flash('error', 'You can only delete your own posts if you are not admin.');
+        return res.redirect('/;')
+    }
+
+    res.render('update-post', {post: post})
+})
+
+app.post('/update-post/:postID', async (req, res) => {
+    if (!req.session.logged_in){
+        req.flash('error', 'You must be logged in.');
+        return res.redirect('/');
+    }
+
+    const db = await Connection.open(mongoUri, wabanimals_db);
+    const postID = parseInt(req.params.postID);
+    const post = await db.collection(POSTS).findOne({postID: postID});
+
+    if (!post) {
+        req.flash('error', 'Post not found');
+        return res.redirect('/');
+    }
+
+    if (post.userID!==req.session.username){
+        req.flash('error', 'You can only delete your own posts if you are not admin.');
+        return res.redirect('/;')
+    }
+
+    const {title, species, location, time, date, description} = req.body;
+
+    if (!title || !species || !location || !time || !date || !description) {
+        req.flash('error', 'All fields are required.');
+        return res.redirect(`/edit-post/${postID}`);
+    }
+
+    const result = await updatePost(db, postID, req.session.username, title, species, description, date, time, location);
+
+    if (result) {
+        req.flash('info', 'Post updated successfully!');
+    } else {
+        req.flash('error', 'Could not update post.');
+    }
+    return res.redirect('/');
+
+})
+
+
 
 //deletes post by postID - only for admin
 async function deletePost(db, postID) {
