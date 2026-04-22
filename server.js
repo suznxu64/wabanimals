@@ -46,6 +46,11 @@ app.use(cookieSession({
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }))
 
+app.use((req, res, next) => {
+    res.locals.session = req.session;
+    next();
+});
+
 
 const mongoUri = cs304.getMongoUri();
 
@@ -264,7 +269,7 @@ app.get('/profile', async (req, res) => {
         const userID = req.session.username;
 
         //find user information from the collection
-        const userProfile = await db.collection(USERS).findONE({userID: userID});
+        const userProfile = await db.collection(USERS).findOne({userID: userID});
         console.log("profile data: ", userProfile);
         res.render("profile", {user: userProfile});
     } catch (error) {
@@ -316,7 +321,7 @@ app.post("/submit-post-form", async (req, res) => {
 
         // get user from session - not running yet
         //const userID = req.session.username;
-        const userID = null;
+        const userID = req.session.username;
 
         //detect incomplete form
         //ADD IMAGE LATER
@@ -384,8 +389,22 @@ async function insertNewPost(db, userID, postTitle, species, description, sighti
     const result = await db.collection("posts").insertOne(newPost);
     //return true when result is within the database and returns postid to find later
     console.log("your postID is: ", postID)
+
+
+    const user = await findUser(db, userID);
+    let old_num_posts = user.numPosts;
+    const old_admin = user.admin;
+    const old_num_comments = user.numTotalComments;
+    const old_species_sighted = user.speciesSighted ?? [];
+    old_species_sighted.push(species);
+    const new_species = old_species_sighted;
+
+    const user_result = await updateUser(db, userID, old_num_posts + 1, old_admin, old_num_comments, new_species);
+    console.log("new_user_result =", user_result)
+
     return {
-        success: result.acknowledged,
+        postSuccess: result.acknowledged,
+        userSuccess: user_result.acknowledged,
         postID: postID
     };
 }
@@ -424,11 +443,47 @@ async function updatePost(db, postID, userID, postTitle, species, description, s
 
 //deletes post by postID - only for admin
 async function deletePost(db, postID) {
-    const result = await db.collection("posts").deleteOne({ postID: postID });
+    const result = await db.collection("posts").findOne({ postID: postID });
+
+    const delete_result = await db.collection("posts").deleteOne({postID : postID});
+
+    const userID = result.userID;
+    const user = await findUser(db, userID);
+    let old_num_posts = user.numPosts;
+    const old_admin = user.admin;
+    const old_num_comments = user.numTotalComments;
+    const old_species_sighted = user.speciesSighted ?? [];
+    const new_species = old_species_sighted.filter(s => s !== result.species);
+
+    const user_result = await updateUser(db, result.userID, old_num_posts - 1, old_admin, old_num_comments, new_species);
+    console.log("new_user_result =", user_result)
 
     //return true if one object was deleted
-    return result.deletedCount === 1;
+    return delete_result.deletedCount === 1;
 }
+
+app.post('/delete-post', async (req, res) => {
+    if (!req.session.logged_in){
+        req.flash('error', 'You must be logged in.');
+        return res.redirect('/');
+    }
+    const db = await Connection.open(mongoUri, wabanimals_db);
+    const postID = parseInt(req.body.postID);
+
+    const post = await db.collection(POSTS).findOne({postID: postID});
+
+    if (post.userID!==req.session.username){
+        req.flash('error', 'You can only delete your own posts if you are not admin.');
+        return res.redirect('/;')
+    }
+    const result = await deletePost(db, postID);
+    if (result) {
+        req.flash('info', `Post number ${postID} deleted successfully.`);
+    } else {
+        req.flash('error', 'Could not delete post.');
+    }
+    return res.redirect('/');
+})
 
 
 //inserts new user entry with the inputted parameters
