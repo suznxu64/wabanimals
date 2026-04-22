@@ -63,7 +63,7 @@ Home page also includes some introductory page to the site.
 */
 app.get('/', async (req, res) => {
     try {
-       
+
         const db = await Connection.open(mongoUri, wabanimals_db);
 
         // get all posts from the posts collection
@@ -112,10 +112,10 @@ app.get('/search', async (req, res) => {
 
         if (term && kind) {
             //if the user searches by species, search the database by species using regular expression
-            if (kind === "species") { 
+            if (kind === "species") {
                 query.species = { $regex: term, $options: "i" };
                 //if the user searches by location, search the database by location using regular expression
-            }  else if (kind === "location") {
+            } else if (kind === "location") {
                 query.sightingLocation = { $regex: term, $options: "i" };
             }
         }
@@ -134,7 +134,7 @@ app.get('/search', async (req, res) => {
             kind: kind
         });
 
-    //print to console error and flash error and redirect to search page if there is another type of error
+        //print to console error and flash error and redirect to search page if there is another type of error
     } catch (err) {
         console.error("Search error:", err);
         req.flash('error', "Search failed: " + err.message);
@@ -160,30 +160,30 @@ app.post('/register', async (req, res) => {
         const username = req.body.username;
         const password = req.body.password;
         const db = await Connection.open(mongoUri, wabanimals_db);
-        var existingUser = await db.collection(USERS).findOne({username: username});
+        var existingUser = await db.collection(USERS).findOne({ username: username });
         //flashes an error if user exists
         if (existingUser) {
-          req.flash('error', "Login already exists - please try logging in instead.");
-          return res.redirect('/')
+            req.flash('error', "Login already exists - please try logging in instead.");
+            return res.redirect('/')
         }
         const hash = await bcrypt.hash(password, ROUNDS);
         //inserts new user
         const result = await insertNewUser(db, username, hash, 0, false, 0, [])
-    
-        if (result){
+
+        if (result) {
             console.log('successfully joined', username, password, hash);
             req.flash('info', 'successfully joined and logged in as ' + username);
         }
-        
+
 
         req.session.username = username;
         req.session.logged_in = true;
         return res.redirect('/');
-      } catch (error) {
+    } catch (error) {
         console.log(error);
         req.flash('error', `Form submission error: ${error}`);
         return res.redirect('/')
-      }
+    }
 });
 
 /*
@@ -264,9 +264,9 @@ app.get('/profile', async (req, res) => {
         const userID = req.session.username;
 
         //find user information from the collection
-        const userProfile = await db.collection(USERS).findONE({userID: userID});
+        const userProfile = await db.collection(USERS).findONE({ userID: userID });
         console.log("profile data: ", userProfile);
-        res.render("profile", {user: userProfile});
+        res.render("profile", { user: userProfile });
     } catch (error) {
         console.log(error);
         res.redirect('/');
@@ -274,7 +274,7 @@ app.get('/profile', async (req, res) => {
 });
 
 //renders about page through a GET route with basic exposition information
-app.get('/about', async(req, res) => {
+app.get('/about', async (req, res) => {
     return res.render('about');
 })
 
@@ -320,11 +320,11 @@ app.post("/submit-post-form", async (req, res) => {
 
         //detect incomplete form
         //ADD IMAGE LATER
-    if (!post_title || !species || !location || !sightingTime || !sightingDate ||!description){
-        req.flash('error', 'All fields are required');
+        if (!post_title || !species || !location || !sightingTime || !sightingDate || !description) {
+            req.flash('error', 'All fields are required');
 
-        return res.redirect('/')
-    } 
+            return res.redirect('/')
+        }
         //create new db entry in the posts collection 
         //postID determined from counters
         const result = await insertNewPost(db, userID, post_title, species, description, sightingDate, sightingTime, location);
@@ -347,14 +347,14 @@ app.post("/submit-post-form", async (req, res) => {
 //increment function from scott's code for use in postID
 async function incr(counters, key) {
     let result = await counters.findOneAndUpdate(
-        {collection: key},
+        { collection: key },
         //increment the counter
-        {$inc: {counter: 1}}, 
-        {returnDocument: "after"}
+        { $inc: { counter: 1 } },
+        { returnDocument: "after" }
     );
 
     //return new counter number
-    if(result) {
+    if (result) {
         return result.counter;
     }
 }
@@ -377,6 +377,7 @@ async function insertNewPost(db, userID, postTitle, species, description, sighti
         sightingDate: sightingDate,
         sightingTime: sightingTime,
         sightingLocation: sightingLocation,
+        likes: 0,
         createdAt: new Date()
     }
 
@@ -407,7 +408,7 @@ async function updatePost(db, postID, userID, postTitle, species, description, s
             {
                 $set: {
                     //all information from parameters
-                    postID: postID, 
+                    postID: postID,
                     userID: userID,
                     postTitle: postTitle,
                     species: species,
@@ -462,7 +463,7 @@ async function findUser(db, userID) {
 //updates  user profile in the db given the userID
 async function updateUser(db, userID, numPosts, admin, numTotalComments, speciesSighted) {
     const result = await db.collection("users")
-    //search based on userid
+        //search based on userid
         .updateOne({ userID: userID },
             {
                 $set: {
@@ -491,6 +492,39 @@ async function deleteUser(db, userID) {
 app.get("/upload", (req, res) => {
     res.render("upload.ejs");
 });
+
+// increments the "likes" for a post and returns the entire updated post document
+// This improved version uses findOneAndUpdate, updating and returning
+// the update document in one operation.
+async function likePost(postID) {
+    const db = await Connection.open(mongoUri, wabanimals_db);
+
+    const result = await db.collection(POSTS).findOneAndUpdate(
+        { postID: postID },
+        { $inc: { likes: 1 } }, //incrememnts likes by one
+        { upsert: false, returnDocument: 'after' }
+    );
+
+    return result.value;
+}
+
+//Ajax "likes for" posts, a POST route that calls the likePost helper function
+// defined above
+app.post('/likeAjax/:postID', async (req, res) => {
+    const postID = parseInt(req.params.postID);
+    const doc = await likePost(postID);
+    if (!doc) {
+        return res.json({ error: true, message: "Post not found" });
+    }
+
+    return res.json({
+        error: false,
+        likes: doc.likes,
+        postID: postID
+    });
+});
+
+
 
 //used for testing
 async function main() {
