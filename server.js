@@ -303,7 +303,11 @@ app.post("/submit-post-form", async (req, res) => {
 
 
         //input after suzy is done
-        //const image = req.body.image;
+        const image = req.file;
+        console.log("image: ", image);
+
+        const imagePath = req.file.filename;
+        console.log("imagePath: ", image);
 
         //collect location from form
         const location = req.body.location;
@@ -326,15 +330,14 @@ app.post("/submit-post-form", async (req, res) => {
         const userID = req.session.username;
 
         //detect incomplete form
-        //ADD IMAGE LATER
-        if (!post_title || !species || !location || !sightingTime || !sightingDate || !description) {
+        if (!post_title || !species || !image || imagePath || !location || !sightingTime || !sightingDate || !description) {
             req.flash('error', 'All fields are required');
 
             return res.redirect('/')
         }
         //create new db entry in the posts collection 
         //postID determined from counters
-        const result = await insertNewPost(db, userID, post_title, species, description, sightingDate, sightingTime, location);
+        const result = await insertNewPost(db, userID, post_title, species, image, imagePath, description, sightingDate, sightingTime, location);
         console.log("inserting postID ", result.postID, "into POSTS: ", result)
 
         //insert a flash here saying your post has been uploaded?
@@ -367,7 +370,7 @@ async function incr(counters, key) {
 }
 
 //inserts new post entry with inputted parameters, some from back end, some from form
-async function insertNewPost(db, userID, postTitle, species, description, sightingDate, sightingTime, sightingLocation) {
+async function insertNewPost(db, userID, postTitle, species, image, imagePath, description, sightingDate, sightingTime, sightingLocation) {
 
     const counters = db.collection("counters");
 
@@ -380,6 +383,8 @@ async function insertNewPost(db, userID, postTitle, species, description, sighti
         userID: userID,
         postTitle: postTitle,
         species: species,
+        image: image,
+        imagePath: imagePath,
         description: description,
         sightingDate: sightingDate,
         sightingTime: sightingTime,
