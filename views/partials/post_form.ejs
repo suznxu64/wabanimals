@@ -5,9 +5,13 @@ Date: April 2026
 -->
 
 
-<form class="form-template" id="post-form" action="/submit-post-form" method="POST" >
+<form class="form-template" id="post-form" action="/submit-post-form" method="POST" enctype="multipart/form-data" >
     <p><label>Title: <input name="title"></label></p>
-    <p><button type="button">Upload image(s)</button></p>
+
+    <label>Upload image(s)
+        <input type="file" accept="image/*" name="image" >
+    </label>
+
     <p><!-- it should be okay to use a structural label here, but WAVE warns, and I'd rather apease it -->
         <label for="species">Species</label>
         <select id="species" name="species">

@@ -13,6 +13,7 @@ const cs304 = require('./cs304');
 const { add, result, find } = require('lodash');
 const flash = require('express-flash');
 const bcrypt = require('bcrypt');
+const multer = require('multer');
 
 const counters = require('./counters');
 
@@ -30,6 +31,7 @@ app.use(cs304.logStartRequest);
 // This handles POST data
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+app.use('/uploads', express.static('uploads')); //multer for file upload
 
 app.use(cs304.logRequestData);  // tell the user about any request data
 
@@ -52,6 +54,48 @@ app.use((req, res, next) => {
 });
 
 
+function timeString(dateObj) {
+    if( !dateObj) {
+        dateObj = new Date();
+    }
+    // convert val to two-digit string
+    d2 = (val) => val < 10 ? '0'+val : ''+val;
+    let hh = d2(dateObj.getHours())
+    let mm = d2(dateObj.getMinutes())
+    let ss = d2(dateObj.getSeconds())
+    return hh+mm+ss
+}
+
+//configures storage property of Milter
+var storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, 'public/uploads')
+    },
+    filename: function (req, file, cb) {
+        let parts = file.originalname.split('.');
+        let ext = parts[parts.length-1];
+        let hhmmss = timeString();
+        cb(null, file.fieldname + '-' + hhmmss + '.' + ext);
+    }
+  })
+
+  //creates a middleware function using the milter model
+var upload = multer({ 
+    storage: storage, limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: function (req, file, cb) {
+        const ext = file.originalname.toLowerCase().split('.').pop();
+        if (ext === 'heic') {
+            req.fileValidationError = 'HEIC images are not supported. Please convert to JPEG before uploading.';
+            return cb(null, false);
+        }
+        if (file.mimetype !== 'image/jpeg' && ext !== 'jpg' && ext !== 'jpeg') {
+            req.fileValidationError = 'Only JPEG images are allowed.';
+            return cb(null, false);
+        }
+        cb(null, true);
+    }
+});
+
 const mongoUri = cs304.getMongoUri();
 
 //declaring wabanimals our db for all functions/queries
@@ -67,6 +111,11 @@ on a home page feed, ordered from most recently posted at the top to oldest at t
 Home page also includes some introductory page to the site. 
 */
 app.get('/', async (req, res) => {
+    return res.redirect('/register');
+});
+
+//home page
+app.get('/home', async (req, res) => {
     try {
 
         const db = await Connection.open(mongoUri, wabanimals_db);
@@ -183,11 +232,11 @@ app.post('/register', async (req, res) => {
 
         req.session.username = username;
         req.session.logged_in = true;
-        return res.redirect('/');
+        return res.redirect('/home');
     } catch (error) {
         console.log(error);
         req.flash('error', `Form submission error: ${error}`);
-        return res.redirect('/')
+        return res.redirect('/home')
     }
 });
 
@@ -212,23 +261,23 @@ app.post("/login", async (req, res) => {
         console.log('user', existingUser);
         if (!existingUser) {
             req.flash('error', "Username does not exist - try again.");
-            return res.redirect('/')
+            return res.redirect('/login')
         }
         //finds account in USERS document; if match exists logs in, if not, flashes an error and redirects
         const match = await bcrypt.compare(password, existingUser.hash);
         console.log('match', match);
         if (!match) {
             req.flash('error', "Username or password incorrect - try again.");
-            return res.redirect('/')
+            return res.redirect('/login')
         }
         req.flash('info', 'successfully logged in as ' + username);
         req.session.username = username;
         req.session.logged_in = true;
         console.log('login as', username);
-        return res.redirect('/');
+        return res.redirect('/login');
     } catch (error) {
         req.flash('error', `Form submission error: ${error}`);
-        return res.redirect('/')
+        return res.redirect('/login')
     }
 });
 
@@ -285,9 +334,15 @@ app.get('/about', async (req, res) => {
 
 //post for submitting post form (sent from ejs)
 //creates a post database entry
-app.post("/submit-post-form", async (req, res) => {
+app.post("/submit-post-form", upload.single('image'), async (req, res) => {
     console.log("________________________________")
     console.log("submitting post form")
+
+    //makes sure that the file submitted is a JPEG file
+    if (req.fileValidationError) {
+        req.flash('error', req.fileValidationError);
+        return res.redirect('/');
+    }
 
     try {
         const db = await Connection.open(mongoUri, wabanimals_db);
@@ -295,17 +350,20 @@ app.post("/submit-post-form", async (req, res) => {
         const post_title = req.body.title;
         console.log("title: ", post_title)
 
+        
+
         //collect species from form
         const species = req.body.species;
         console.log("species: ", species)
 
 
-        //input after suzy is done
+        //collect image from form
         const image = req.file;
         console.log("image: ", image);
 
-        const imagePath = req.file.filename;
-        console.log("imagePath: ", image);
+        //collects the image's file name from form
+        const imageName = req.file.filename;
+        console.log("imageName: ", imageName);
 
         //collect location from form
         const location = req.body.location;
@@ -327,15 +385,21 @@ app.post("/submit-post-form", async (req, res) => {
         //const userID = req.session.username;
         const userID = req.session.username;
 
+        if (req.fileValidationError) {
+            req.flash('error', req.fileValidationError);
+            return res.redirect('/');
+        }
+        
         //detect incomplete form
-        if (!post_title || !species || !image || imagePath || !location || !sightingTime || !sightingDate || !description) {
+        if (!post_title || !species || !image || !imageName || !location || !sightingTime || !sightingDate || !description) {
             req.flash('error', 'All fields are required');
 
             return res.redirect('/')
         }
+
         //create new db entry in the posts collection 
         //postID determined from counters
-        const result = await insertNewPost(db, userID, post_title, species, image, imagePath, description, sightingDate, sightingTime, location);
+        const result = await insertNewPost(db, userID, post_title, species, image, imageName, description, sightingDate, sightingTime, location);
         console.log("inserting postID ", result.postID, "into POSTS: ", result)
 
         //insert a flash here saying your post has been uploaded?
@@ -368,7 +432,7 @@ async function incr(counters, key) {
 }
 
 //inserts new post entry with inputted parameters, some from back end, some from form
-async function insertNewPost(db, userID, postTitle, species, image, imagePath, description, sightingDate, sightingTime, sightingLocation) {
+async function insertNewPost(db, userID, postTitle, species, image, imageName, description, sightingDate, sightingTime, sightingLocation) {
 
     const counters = db.collection("counters");
 
@@ -382,7 +446,7 @@ async function insertNewPost(db, userID, postTitle, species, image, imagePath, d
         postTitle: postTitle,
         species: species,
         image: image,
-        imagePath: imagePath,
+        imageName: imageName,
         description: description,
         sightingDate: sightingDate,
         sightingTime: sightingTime,
@@ -448,6 +512,7 @@ async function updatePost(db, postID, userID, postTitle, species, description, s
     return result.modifiedCount === 1;
 }
 
+//gets all of the information that can be updated in the a post given its id
 app.get('/update-post/:postID', async (req, res) => {
     if (!req.session.logged_in){
         req.flash('error', 'You must be logged in.');
@@ -471,6 +536,7 @@ app.get('/update-post/:postID', async (req, res) => {
     res.render('update-post', {post: post})
 })
 
+//updates said post
 app.post('/update-post/:postID', async (req, res) => {
     if (!req.session.logged_in){
         req.flash('error', 'You must be logged in.');
