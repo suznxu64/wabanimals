@@ -303,7 +303,8 @@ app.post('/logout', (req, res) => {
     }
 });
 
-
+//this endpoint takes users to their individual profile page which is linked
+//to their user account and they can see their data 
 app.get('/profile', async (req, res) => {
     try {
         //make sure user is logged in
@@ -312,6 +313,7 @@ app.get('/profile', async (req, res) => {
             return res.redirect('/');
         }
 
+        //open wabanimals
         const db = await Connection.open(mongoUri, wabanimals_db);
 
         //get userid from session info
@@ -460,15 +462,18 @@ async function insertNewPost(db, userID, postTitle, species, image, imageName, d
     //return true when result is within the database and returns postid to find later
     console.log("your postID is: ", postID)
 
-
+    //connect to user database to add userid to the post
     const user = await findUser(db, userID);
+    //collect data about the user from the user database
     let old_num_posts = user.numPosts;
     const old_admin = user.admin;
     const old_num_comments = user.numTotalComments;
     const old_species_sighted = user.speciesSighted ?? [];
+    //update species with the new species in the post
     old_species_sighted.push(species);
     const new_species = old_species_sighted;
 
+    //update user with the new information (adding one post and one species)
     const user_result = await updateUser(db, userID, old_num_posts + 1, old_admin, old_num_comments, new_species);
     console.log("new_user_result =", user_result)
 
@@ -512,8 +517,11 @@ async function updatePost(db, postID, userID, postTitle, species, description, s
     return result.modifiedCount === 1;
 }
 
-//gets all of the information that can be updated in the a post given its id
+//this endpoint is linked to a button on the post that is only visible if you are logged
+//in as the post creator
+//user can update post information based on postid
 app.get('/update-post/:postID', async (req, res) => {
+    //make sure user is logged in
     if (!req.session.logged_in){
         req.flash('error', 'You must be logged in.');
         return res.redirect('/');
@@ -521,6 +529,7 @@ app.get('/update-post/:postID', async (req, res) => {
 
     const db = await Connection.open(mongoUri, wabanimals_db);
     const postID = parseInt(req.params.postID);
+    //find post to update in the posts collection
     const post = await db.collection(POSTS).findOne({postID: postID});
 
     if (!post) {
@@ -528,16 +537,21 @@ app.get('/update-post/:postID', async (req, res) => {
         return res.redirect('/');
     }
 
+    //ensure that the logged in user is the same as the user id on the post
+    //only post authors (and admin) can edit posts
      if (post.userID!==req.session.username){
         req.flash('error', 'You can only delete your own posts if you are not admin.');
         return res.redirect('/;')
     }
 
+    //render to update-post.ejs with updated information
     res.render('update-post', {post: post})
 })
 
-//updates said post
+
+//this end point updates the post based on the form data
 app.post('/update-post/:postID', async (req, res) => {
+    //make sure user is logged in
     if (!req.session.logged_in){
         req.flash('error', 'You must be logged in.');
         return res.redirect('/');
@@ -545,6 +559,7 @@ app.post('/update-post/:postID', async (req, res) => {
 
     const db = await Connection.open(mongoUri, wabanimals_db);
     const postID = parseInt(req.params.postID);
+    //find the post to update from the collection
     const post = await db.collection(POSTS).findOne({postID: postID});
 
     if (!post) {
@@ -552,18 +567,22 @@ app.post('/update-post/:postID', async (req, res) => {
         return res.redirect('/');
     }
 
+    //make sure the logged in user is the same user who created the post
     if (post.userID!==req.session.username){
-        req.flash('error', 'You can only delete your own posts if you are not admin.');
+        req.flash('error', 'You can only update your own posts if you are not admin.');
         return res.redirect('/;')
     }
 
+    //collect info from the form
     const {title, species, location, time, date, description} = req.body;
 
+    //make sure that all information is re-filledo ut
     if (!title || !species || !location || !time || !date || !description) {
         req.flash('error', 'All fields are required.');
-        return res.redirect(`/edit-post/${postID}`);
+        return res.redirect(`/update-post/${postID}`);
     }
 
+    //update post with the new information
     const result = await updatePost(db, postID, req.session.username, title, species, description, date, time, location);
 
     if (result) {
@@ -577,20 +596,25 @@ app.post('/update-post/:postID', async (req, res) => {
 
 
 
-//deletes post by postID - only for admin
+//deletes post by postID and updates profile for the author - only for admin or post author
 async function deletePost(db, postID) {
+    //find the post to delete and store it
     const result = await db.collection("posts").findOne({ postID: postID });
 
+    //delete the post
     const delete_result = await db.collection("posts").deleteOne({postID : postID});
 
+    //collect informaiton about author
     const userID = result.userID;
     const user = await findUser(db, userID);
     let old_num_posts = user.numPosts;
     const old_admin = user.admin;
     const old_num_comments = user.numTotalComments;
     const old_species_sighted = user.speciesSighted ?? [];
+    //take away the species of the deleted post
     const new_species = old_species_sighted.filter(s => s !== result.species);
 
+    //update the user profile, take away one post and one species
     const user_result = await updateUser(db, result.userID, old_num_posts - 1, old_admin, old_num_comments, new_species);
     console.log("new_user_result =", user_result)
 
@@ -598,7 +622,9 @@ async function deletePost(db, postID) {
     return delete_result.deletedCount === 1;
 }
 
+//this end point deletes the post on the backend (only fo admin or post author)
 app.post('/delete-post', async (req, res) => {
+    //make sure user is logged in
     if (!req.session.logged_in){
         req.flash('error', 'You must be logged in.');
         return res.redirect('/');
@@ -606,14 +632,17 @@ app.post('/delete-post', async (req, res) => {
     const db = await Connection.open(mongoUri, wabanimals_db);
     const postID = parseInt(req.body.postID);
 
+    //find the post to delete based on the postid
     const post = await db.collection(POSTS).findOne({postID: postID});
 
+    //only author can delete the post
     if (post.userID!==req.session.username){
         req.flash('error', 'You can only delete your own posts if you are not admin.');
         return res.redirect('/;')
     }
+    //delete the post
     const result = await deletePost(db, postID);
-    if (result) {
+    if (result !== null) {
         req.flash('info', `Post number ${postID} deleted successfully.`);
     } else {
         req.flash('error', 'Could not delete post.');
