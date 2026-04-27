@@ -38,26 +38,9 @@ Date: 3/30
                             <% } %>
 
                                 <% results.forEach(post=> { %>
-                                    <div class="card">
-                                        <div class="card-content">
-                                            <div class="text">
-                                                <h2 class="post-title">
-                                                    <%= post.postTitle %>
-                                                </h2>
-                                                <p class="post-text"><strong>Species:</strong>
-                                                    <%= post.species %>
-                                                </p>
-                                                <p class="post-text"><strong>Location:</strong>
-                                                    <%= post.sightingLocation %>
-                                                </p>
-                                                <p class="post-text">
-                                                    <%= post.description %>
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <% }) %>
-                                        <% } %>
+                                    <%- include('partials/post_card.ejs', { post: post }) %>
+                                        <% }) %>
+                                            <% } %>
         </div>
 </body>
 

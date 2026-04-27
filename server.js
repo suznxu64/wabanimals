@@ -754,6 +754,7 @@ async function likePost(postID, userID) {
 app.post('/likeAjax/:postID', async (req, res) => {
     if (!req.session.logged_in) {
         return res.json({ error: true, message: "Login required" });
+        
     }
 
     const userID = req.session.username;

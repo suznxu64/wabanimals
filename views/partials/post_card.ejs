@@ -1,0 +1,71 @@
+<!--Documentation
+Author: Nivale, Ari, Suzy
+Description: Structure of all flash messages
+Date: April 2026
+-->
+<div class="card">
+    <div class="card-content">
+
+        <!-- Text content of the post -->
+        <div class="text">
+            <h2 class="post-title">
+                <%= post.postTitle %>
+            </h2>
+
+            <p class="post-text">
+                <strong>Posted on:</strong>
+                <% if (post.createdAt) { %>
+                    <%= new Date(post.createdAt).toLocaleDateString() %>
+                        <% } else { %>
+                            Unknown time
+                            <% } %>
+            </p>
+
+            <p class="post-text">
+                <strong>Species:</strong>
+                <%= post.species %>
+            </p>
+
+            <p class="post-text">
+                <strong>Location:</strong>
+                <%= post.sightingLocation %>
+            </p>
+
+            <p class="post-text">
+                <strong>Date:</strong>
+                <%= post.sightingDate %> at <%= post.sightingTime %>
+            </p>
+            <p class="post-text">
+                <strong>Number of likes:</strong>
+                <span class="like-count">
+                    <%= post.likes || 0 %>
+                </span>
+            </p>
+
+            <button class="likeBtn" type="button" data-postid="<%= post.postID %>">
+                👍 like
+            </button>
+
+            <p class="post-text">
+                <%= post.description %>
+            </p>
+            <% if (session.logged_in && session.username===post.userID) { %>
+                <a href="/update-post/<%= post.postID %>">
+                    <button class="updateBtn">Update Post</button>
+                </a>
+                <% } %>
+
+                    <% if (session.logged_in && session.username===post.userID) { %>
+                        <form method="POST" action="/delete-post">
+                            <input type="hidden" name="postID" value="<%= post.postID %>">
+                            <button class="deleteBtn" type="submit">Delete Post</button>
+                        </form>
+                        <% } %>
+        </div>
+
+        <!-- actual image -->
+        <img class="post-image" src="/uploads/<%= post.imageName %>" alt="<%= post.title %>">
+
+    </div>
+
+</div>
