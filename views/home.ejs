@@ -130,20 +130,31 @@ Date: Home page with introductory information and live post feed
             <script>
                 document.querySelectorAll('.likeBtn').forEach(button => {
                     button.addEventListener('click', async () => {
-                        const postID = button.dataset.postid;
+                        try {
+                            const postID = button.dataset.postid;
 
-                        const res = await fetch(`/likeAjax/${postID}`, {
-                            method: 'POST'
-                        });
+                            const res = await fetch(`/likeAjax/${postID}`, {
+                                method: 'POST'
+                            });
 
-                        const data = await res.json();
+                            const data = await res.json();
 
-                        if (!data.error) {
-                            const likeCountSpan = button
-                                .closest('.card-content')
-                                .querySelector('.like-count');
+                            console.log("Response:", data);
 
-                            likeCountSpan.textContent = data.likes;
+                            if (!data.error) {
+                                const likeCountSpan = button
+                                    .closest('.card-content')
+                                    .querySelector('.like-count');
+
+                                if (likeCountSpan) {
+                                    likeCountSpan.textContent = data.likes;
+                                }
+                            } else {
+                                alert(data.message);
+                            }
+
+                        } catch (err) {
+                            console.error(err);
                         }
                     });
                 });

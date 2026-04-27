@@ -269,7 +269,7 @@ app.get('/profile', async (req, res) => {
         const userID = req.session.username;
 
         //find user information from the collection
-        const userProfile = await db.collection(USERS).findONE({ userID: userID });
+        const userProfile = await db.collection(USERS).findOne({ userID: userID });
         console.log("profile data: ", userProfile);
         res.render("profile", { user: userProfile });
     } catch (error) {
@@ -383,6 +383,7 @@ async function insertNewPost(db, userID, postTitle, species, description, sighti
         sightingTime: sightingTime,
         sightingLocation: sightingLocation,
         likes: 0,
+        likedBy: [],
         createdAt: new Date()
     }
 
@@ -446,7 +447,7 @@ async function updatePost(db, postID, userID, postTitle, species, description, s
 async function deletePost(db, postID) {
     const result = await db.collection("posts").findOne({ postID: postID });
 
-    const delete_result = await db.collection("posts").deleteOne({postID : postID});
+    const delete_result = await db.collection("posts").deleteOne({ postID: postID });
 
     const userID = result.userID;
     const user = await findUser(db, userID);
@@ -464,16 +465,16 @@ async function deletePost(db, postID) {
 }
 
 app.post('/delete-post', async (req, res) => {
-    if (!req.session.logged_in){
+    if (!req.session.logged_in) {
         req.flash('error', 'You must be logged in.');
         return res.redirect('/');
     }
     const db = await Connection.open(mongoUri, wabanimals_db);
     const postID = parseInt(req.body.postID);
 
-    const post = await db.collection(POSTS).findOne({postID: postID});
+    const post = await db.collection(POSTS).findOne({ postID: postID });
 
-    if (post.userID!==req.session.username){
+    if (post.userID !== req.session.username) {
         req.flash('error', 'You can only delete your own posts if you are not admin.');
         return res.redirect('/;')
     }
@@ -548,16 +549,26 @@ app.get("/upload", (req, res) => {
     res.render("upload.ejs");
 });
 
+
 // increments the "likes" for a post and returns the entire updated post document
 // This improved version uses findOneAndUpdate, updating and returning
 // the update document in one operation.
-async function likePost(postID) {
+async function likePost(postID, userID) {
     const db = await Connection.open(mongoUri, wabanimals_db);
 
     const result = await db.collection(POSTS).findOneAndUpdate(
-        { postID: postID },
-        { $inc: { likes: 1 } }, //incrememnts likes by one
-        { upsert: false, returnDocument: 'after' }
+        {
+            postID: postID,
+            $or: [
+                { likedBy: { $exists: false } },
+                { likedBy: { $ne: userID } }
+            ]
+        },
+        {
+            $inc: { likes: 1 },
+            $push: { likedBy: userID }
+        },
+        { returnDocument: 'after' }
     );
 
     return result.value;
@@ -566,11 +577,16 @@ async function likePost(postID) {
 //Ajax "likes for" posts, a POST route that calls the likePost helper function
 // defined above
 app.post('/likeAjax/:postID', async (req, res) => {
-    const postID = parseInt(req.params.postID);
-    const doc = await likePost(postID);
-    if (!doc) {
-        return res.json({ error: true, message: "Post not found" });
+    if (!req.session.logged_in) { //makes sure the user is logged in in order for a comment to my made
+        return res.json({ error: true, message: "Login required" });
     }
+    const userID = req.session.username;
+    const postID = parseInt(req.params.postID);
+    const doc = await likePost(postID, userID);
+
+   if (!doc) {
+    return res.json({ error: true, message: "You already liked this post" });
+}
 
     return res.json({
         error: false,
