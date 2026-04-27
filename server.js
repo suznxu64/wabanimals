@@ -566,6 +566,7 @@ async function likePost(postID, userID) {
         },
         {
 
+            
             $inc: { likes: 1 },
             $push: { likedBy: userID }
         },
