@@ -301,7 +301,9 @@ app.post("/submit-post-form", async (req, res) => {
 
 
         //input after suzy is done
-        //const image = req.body.image;
+        //const 
+        // 
+         = req.body.image;
 
         //collect location from form
         const location = req.body.location;
@@ -566,7 +568,7 @@ async function likePost(postID, userID) {
         },
         {
 
-            
+
             $inc: { likes: 1 },
             $push: { likedBy: userID }
         },
