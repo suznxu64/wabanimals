@@ -1,0 +1,84 @@
+<%- include('partials/navbar') %>
+
+        <%- include('partials/flash.ejs') %>
+
+
+<div class="content">
+    <div class="form-template">
+        <h1>Edit Post</h1>
+        <form method="POST" action="/update-post/<%= post.postID %>">
+            <label>Title
+                <input type="text" name="title" value="<%= post.postTitle %>" required>
+            </label>
+            <label>Update image
+                <input type="file" accept="image/*" name="image" >
+            </label>
+            <p>
+            <label for="species">Species</label>
+        <select id="species" name="species" required>
+            <option value="">choose species</option>
+            <option value="goose" <%= post.species === 'goose' ? 'selected' : '' %>>goose</option>
+            <option value="swan" <%= post.species === 'swan' ? 'selected' : '' %>>swan</option>
+            <option value="turkey" <%= post.species === 'turkey' ? 'selected' : '' %>>turkey</option>
+            <option value="owl" <%= post.species === 'owl' ? 'selected' : '' %>>owl</option>
+            <option value="deer" <%= post.species === 'deer' ? 'selected' : '' %>>deer</option>
+            <option value="duck" <%= post.species === 'duck' ? 'selected' : '' %>>duck</option>
+            <option value="hawk" <%= post.species === 'hawk' ? 'selected' : '' %>>hawk</option>
+            <option value="bird(other)" <%= post.species === 'bird(other)' ? 'selected' : '' %>>bird</option>
+            <option value="rabbit" <%= post.species === 'rabbit' ? 'selected' : '' %>>rabbit</option>
+            <option value="squirrel" <%= post.species === 'squirrel' ? 'selected' : '' %>>squirrel</option>
+            <option value="chipmunk" <%= post.species === 'chipmunk' ? 'selected' : '' %>>chipmunk</option>
+            <option value="groundhog" <%= post.species === 'groundhog' ? 'selected' : '' %>>groundhog</option>
+            <option value="fox" <%= post.species === 'fox' ? 'selected' : '' %>>fox</option>
+            <option value="coyote" <%= post.species === 'coyote' ? 'selected' : '' %>>coyote</option>
+            <option value="raccoon" <%= post.species === 'raccoon' ? 'selected' : '' %>>raccoon</option>
+            <option value="mouse" <%= post.species === 'mouse' ? 'selected' : '' %>>mouse</option>
+            <option value="rat" <%= post.species === 'rat' ? 'selected' : '' %>>rat</option>
+            <option value="beaver" <%= post.species === 'beaver' ? 'selected' : '' %>>beaver</option>
+            <option value="turtle" <%= post.species === 'turtle' ? 'selected' : '' %>>turtle</option>
+            <option value="lizard" <%= post.species === 'lizard' ? 'selected' : '' %>>lizard</option>
+            <option value="frog" <%= post.species === 'frog' ? 'selected' : '' %>>frog</option>
+            <option value="fish" <%= post.species === 'fish' ? 'selected' : '' %>>fish</option>
+            <option value="other" <%= post.species === 'other' ? 'selected' : '' %>>other</option>
+        </select>
+        </p>
+        <p>
+            <label for="location">Sighting Location</label>
+        <select id="location" name="location" required>
+    <option value="">choose location</option>
+    <option value="Tower Court" <%= post.sightingLocation === 'Tower Court' ? 'selected' : '' %>>Tower Court</option>
+    <option value="Quint" <%= post.sightingLocation === 'Quint' ? 'selected' : '' %>>Quint</option>
+    <option value="Munger Meadow" <%= post.sightingLocation === 'Munger Meadow' ? 'selected' : '' %>>Munger Meadow</option>
+    <option value="Stone D" <%= post.sightingLocation === 'Stone D' ? 'selected' : '' %>>Stone D</option>
+    <option value="Bates/McAfee/Freeman" <%= post.sightingLocation === 'Bates/McAfee/Freeman' ? 'selected' : '' %>>Bates/McAfee/Freeman</option>
+    <option value="Academic Quad" <%= post.sightingLocation === 'Academic Quad' ? 'selected' : '' %>>Academic Quad</option>
+    <option value="Paramecium Pond" <%= post.sightingLocation === 'Paramecium Pond' ? 'selected' : '' %>>Paramecium Pond</option>
+    <option value="Edible Ecosystem" <%= post.sightingLocation === 'Edible Ecosystem' ? 'selected' : '' %>>Edible Ecosystem</option>
+    <option value="Wellesley Botanical Gardens" <%= post.sightingLocation === 'Wellesley Botanical Gardens' ? 'selected' : '' %>>Wellesley Botanical Gardens</option>
+    <option value="Tupelo Point" <%= post.sightingLocation === 'Tupelo Point' ? 'selected' : '' %>>Tupelo Point</option>
+    <option value="Tupelo Lane" <%= post.sightingLocation === 'Tupelo Lane' ? 'selected' : '' %>>Tupelo Lane</option>
+    <option value="Lake Waban" <%= post.sightingLocation === 'Lake Waban' ? 'selected' : '' %>>Lake Waban</option>
+    <option value="Lake Path" <%= post.sightingLocation === 'Lake Path' ? 'selected' : '' %>>Lake Path</option>
+    <option value="Severance Green" <%= post.sightingLocation === 'Severance Green' ? 'selected' : '' %>>Severance Green</option>
+    <option value="KSC" <%= post.sightingLocation === 'KSC' ? 'selected' : '' %>>KSC</option>
+    <option value="Alumnae Valley" <%= post.sightingLocation === 'Alumnae Valley' ? 'selected' : '' %>>Alumnae Valley</option>
+    <option value="Green Beach" <%= post.sightingLocation === 'Green Beach' ? 'selected' : '' %>>Green Beach</option>
+    <option value="Clapp Library" <%= post.sightingLocation === 'Clapp Library' ? 'selected' : '' %>>Clapp Library</option>
+    <option value="College Club" <%= post.sightingLocation === 'College Club' ? 'selected' : '' %>>College Club</option>
+    <option value="Mods to Ville path" <%= post.sightingLocation === 'Mods to Ville path' ? 'selected' : '' %>>Mods to Ville path</option>
+    <option value="other" <%= post.sightingLocation === 'other' ? 'selected' : '' %>>other</option>
+</select></p>
+            <label>Time
+                <input type="time" name="time" value="<%= post.sightingTime %>" required>
+            </label>
+            <label>Date
+                <input type="date" name="date" value="<%= post.sightingDate %>" required>
+            </label>
+            <label>Description
+                <textarea name="description" rows="4" required><%= post.description %></textarea>
+            </label>
+            <button type="submit">Save Changes</button>
+        </form>
+    </div>
+</div>
+
