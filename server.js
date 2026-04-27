@@ -602,6 +602,7 @@ async function deletePost(db, postID) {
     //find the post to delete and store it
     const result = await db.collection("posts").findOne({ postID: postID });
 
+
     //delete the post
     const delete_result = await db.collection("posts").deleteOne({postID : postID});
 
