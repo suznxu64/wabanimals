@@ -602,12 +602,9 @@ async function deletePost(db, postID) {
     //find the post to delete and store it
     const result = await db.collection("posts").findOne({ postID: postID });
 
-<<<<<<< HEAD
-    const delete_result = await db.collection("posts").deleteOne({ postID: postID });
-=======
     //delete the post
     const delete_result = await db.collection("posts").deleteOne({postID : postID});
->>>>>>> ff19173426b3725c7249fe2da48410c07466e2f0
+
 
     //collect informaiton about author
     const userID = result.userID;
@@ -743,7 +740,6 @@ async function likePost(postID, userID) {
             ]
         },
         {
-
             $inc: { likes: 1 },
             $push: { likedBy: userID }
         },
