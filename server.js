@@ -627,29 +627,21 @@ async function deletePost(db, postID) {
 
 //this end point deletes the post on the backend (only fo admin or post author)
 app.post('/delete-post', async (req, res) => {
-<<<<<<< HEAD
-    if (!req.session.logged_in) {
-=======
+
     //make sure user is logged in
     if (!req.session.logged_in){
->>>>>>> ff19173426b3725c7249fe2da48410c07466e2f0
         req.flash('error', 'You must be logged in.');
         return res.redirect('/');
     }
     const db = await Connection.open(mongoUri, wabanimals_db);
     const postID = parseInt(req.body.postID);
 
-<<<<<<< HEAD
-    const post = await db.collection(POSTS).findOne({ postID: postID });
-
-    if (post.userID !== req.session.username) {
-=======
     //find the post to delete based on the postid
     const post = await db.collection(POSTS).findOne({postID: postID});
 
     //only author can delete the post
     if (post.userID!==req.session.username){
->>>>>>> ff19173426b3725c7249fe2da48410c07466e2f0
+
         req.flash('error', 'You can only delete your own posts if you are not admin.');
         return res.redirect('/;')
     }
