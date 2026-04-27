@@ -55,32 +55,32 @@ app.use((req, res, next) => {
 
 
 function timeString(dateObj) {
-    if( !dateObj) {
+    if (!dateObj) {
         dateObj = new Date();
     }
     // convert val to two-digit string
-    d2 = (val) => val < 10 ? '0'+val : ''+val;
+    d2 = (val) => val < 10 ? '0' + val : '' + val;
     let hh = d2(dateObj.getHours())
     let mm = d2(dateObj.getMinutes())
     let ss = d2(dateObj.getSeconds())
-    return hh+mm+ss
+    return hh + mm + ss
 }
 
 //configures storage property of Milter
 var storage = multer.diskStorage({
     destination: function (req, file, cb) {
-      cb(null, 'public/uploads')
+        cb(null, 'public/uploads')
     },
     filename: function (req, file, cb) {
         let parts = file.originalname.split('.');
-        let ext = parts[parts.length-1];
+        let ext = parts[parts.length - 1];
         let hhmmss = timeString();
         cb(null, file.fieldname + '-' + hhmmss + '.' + ext);
     }
-  })
+})
 
-  //creates a middleware function using the milter model
-var upload = multer({ 
+//creates a middleware function using the milter model
+var upload = multer({
     storage: storage, limits: { fileSize: 10 * 1024 * 1024 },
     fileFilter: function (req, file, cb) {
         const ext = file.originalname.toLowerCase().split('.').pop();
@@ -274,7 +274,7 @@ app.post("/login", async (req, res) => {
         req.session.username = username;
         req.session.logged_in = true;
         console.log('login as', username);
-        return res.redirect('/login');
+        return res.redirect('/home');
     } catch (error) {
         req.flash('error', `Form submission error: ${error}`);
         return res.redirect('/login')
@@ -325,7 +325,7 @@ app.get('/profile', async (req, res) => {
         res.render("profile", { user: userProfile });
     } catch (error) {
         console.log(error);
-        res.redirect('/');
+        res.redirect('/home');
     }
 });
 
@@ -352,7 +352,7 @@ app.post("/submit-post-form", upload.single('image'), async (req, res) => {
         const post_title = req.body.title;
         console.log("title: ", post_title)
 
-        
+
 
         //collect species from form
         const species = req.body.species;
@@ -389,14 +389,14 @@ app.post("/submit-post-form", upload.single('image'), async (req, res) => {
 
         if (req.fileValidationError) {
             req.flash('error', req.fileValidationError);
-            return res.redirect('/');
+            return res.redirect('/home');
         }
-        
+
         //detect incomplete form
         if (!post_title || !species || !image || !imageName || !location || !sightingTime || !sightingDate || !description) {
             req.flash('error', 'All fields are required');
 
-            return res.redirect('/')
+            return res.redirect('/home')
         }
 
         //create new db entry in the posts collection 
@@ -407,13 +407,13 @@ app.post("/submit-post-form", upload.single('image'), async (req, res) => {
         //insert a flash here saying your post has been uploaded?
         if (result) {
             req.flash('info', `You have successfully uploaded your post! Your postID = ${result.postID}`);
-            return res.redirect('/');
+            return res.redirect('/home');
         }
 
     } catch (error) {
         console.log("error submitting post:", error);
         req.flash('error', `Error submitting post: ${error}`);
-        return res.redirect('/');
+        return res.redirect('/home');
     }
 
 });
@@ -523,59 +523,59 @@ async function updatePost(db, postID, userID, postTitle, species, description, s
 //user can update post information based on postid
 app.get('/update-post/:postID', async (req, res) => {
     //make sure user is logged in
-    if (!req.session.logged_in){
+    if (!req.session.logged_in) {
         req.flash('error', 'You must be logged in.');
-        return res.redirect('/');
+        return res.redirect('/home');
     }
 
     const db = await Connection.open(mongoUri, wabanimals_db);
     const postID = parseInt(req.params.postID);
     //find post to update in the posts collection
-    const post = await db.collection(POSTS).findOne({postID: postID});
+    const post = await db.collection(POSTS).findOne({ postID: postID });
 
     if (!post) {
         req.flash('error', 'Post not found');
-        return res.redirect('/');
+        return res.redirect('/home');
     }
 
     //ensure that the logged in user is the same as the user id on the post
     //only post authors (and admin) can edit posts
-     if (post.userID!==req.session.username){
+    if (post.userID !== req.session.username) {
         req.flash('error', 'You can only delete your own posts if you are not admin.');
-        return res.redirect('/;')
+        return res.redirect('/home;')
     }
 
     //render to update-post.ejs with updated information
-    res.render('update-post', {post: post})
+    res.render('update-post', { post: post })
 })
 
 
 //this end point updates the post based on the form data
 app.post('/update-post/:postID', async (req, res) => {
     //make sure user is logged in
-    if (!req.session.logged_in){
+    if (!req.session.logged_in) {
         req.flash('error', 'You must be logged in.');
-        return res.redirect('/');
+        return res.redirect('/home');
     }
 
     const db = await Connection.open(mongoUri, wabanimals_db);
     const postID = parseInt(req.params.postID);
     //find the post to update from the collection
-    const post = await db.collection(POSTS).findOne({postID: postID});
+    const post = await db.collection(POSTS).findOne({ postID: postID });
 
     if (!post) {
         req.flash('error', 'Post not found');
-        return res.redirect('/');
+        return res.redirect('/home');
     }
 
     //make sure the logged in user is the same user who created the post
-    if (post.userID!==req.session.username){
+    if (post.userID !== req.session.username) {
         req.flash('error', 'You can only update your own posts if you are not admin.');
-        return res.redirect('/;')
+        return res.redirect('/home;')
     }
 
     //collect info from the form
-    const {title, species, location, time, date, description} = req.body;
+    const { title, species, location, time, date, description } = req.body;
 
     //make sure that all information is re-filledo ut
     if (!title || !species || !location || !time || !date || !description) {
@@ -591,7 +591,7 @@ app.post('/update-post/:postID', async (req, res) => {
     } else {
         req.flash('error', 'Could not update post.');
     }
-    return res.redirect('/');
+    return res.redirect('/home');
 
 })
 
@@ -604,7 +604,7 @@ async function deletePost(db, postID) {
 
 
     //delete the post
-    const delete_result = await db.collection("posts").deleteOne({postID : postID});
+    const delete_result = await db.collection("posts").deleteOne({ postID: postID });
 
 
     //collect informaiton about author
@@ -629,21 +629,21 @@ async function deletePost(db, postID) {
 app.post('/delete-post', async (req, res) => {
 
     //make sure user is logged in
-    if (!req.session.logged_in){
+    if (!req.session.logged_in) {
         req.flash('error', 'You must be logged in.');
-        return res.redirect('/');
+        return res.redirect('/home');
     }
     const db = await Connection.open(mongoUri, wabanimals_db);
     const postID = parseInt(req.body.postID);
 
     //find the post to delete based on the postid
-    const post = await db.collection(POSTS).findOne({postID: postID});
+    const post = await db.collection(POSTS).findOne({ postID: postID });
 
     //only author can delete the post
-    if (post.userID!==req.session.username){
+    if (post.userID !== req.session.username) {
 
         req.flash('error', 'You can only delete your own posts if you are not admin.');
-        return res.redirect('/;')
+        return res.redirect('/home;')
     }
     //delete the post
     const result = await deletePost(db, postID);
@@ -652,7 +652,7 @@ app.post('/delete-post', async (req, res) => {
     } else {
         req.flash('error', 'Could not delete post.');
     }
-    return res.redirect('/');
+    return res.redirect('/home');
 })
 
 
@@ -719,19 +719,26 @@ app.get("/upload", (req, res) => {
 
 
 // increments the "likes" for a post and returns the entire updated post document
-// This improved version uses findOneAndUpdate, updating and returning
+// This iversion uses findOneAndUpdate, updating and returning
 // the update document in one operation.
 async function likePost(postID, userID) {
     const db = await Connection.open(mongoUri, wabanimals_db);
 
-    const result = await db.collection(POSTS).findOneAndUpdate(
-        {
-            postID: postID,
-            $or: [
-                { likedBy: { $exists: false } },
-                { likedBy: { $ne: userID } }
-            ]
-        },
+    postID = Number(postID);
+
+    //  check existence FIRST
+    const post = await db.collection(POSTS).findOne({ postID });
+
+    if (!post) return { error: "not_found" };
+
+    // check if already liked
+    if (post.likedBy && post.likedBy.includes(userID)) {
+        return { error: "already_liked", post };
+    }
+
+    // perform update
+    const updated = await db.collection(POSTS).findOneAndUpdate(
+        { postID },
         {
             $inc: { likes: 1 },
             $push: { likedBy: userID }
@@ -739,27 +746,33 @@ async function likePost(postID, userID) {
         { returnDocument: 'after' }
     );
 
-    return result.value;
+    return { post: updated.value };
 }
 
-//Ajax "likes for" posts, a POST route that calls the likePost helper function
-// defined above
+//Ajax likes for posts, a POST route that calls the likePost helper function
+// defined above in order to show post likes on the home page
 app.post('/likeAjax/:postID', async (req, res) => {
-    if (!req.session.logged_in) { //makes sure the user is logged in in order for a comment to my made
+    if (!req.session.logged_in) {
         return res.json({ error: true, message: "Login required" });
     }
-    const userID = req.session.username;
-    const postID = parseInt(req.params.postID);
-    const doc = await likePost(postID, userID);
 
-   if (!doc) {
-    return res.json({ error: true, message: "You already liked this post" });
-}
+    const userID = req.session.username;
+    const postID = Number(req.params.postID);
+
+    const result = await likePost(postID, userID);
+
+    if (result.error === "not_found") {
+        return res.json({ error: true, message: "Post not found" });
+    }
+
+    if (result.error === "already_liked") {
+        return res.json({ error: true, message: "You already liked this post" });
+    }
 
     return res.json({
         error: false,
-        likes: doc.likes,
-        postID: postID
+        likes: result.post.likes,
+        postID
     });
 });
 
