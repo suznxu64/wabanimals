@@ -271,7 +271,7 @@ app.get('/profile', async (req, res) => {
         const userID = req.session.username;
 
         //find user information from the collection
-        const userProfile = await db.collection(USERS).findONE({ userID: userID });
+        const userProfile = await db.collection(USERS).findOne({ userID: userID });
         console.log("profile data: ", userProfile);
         res.render("profile", { user: userProfile });
     } catch (error) {
