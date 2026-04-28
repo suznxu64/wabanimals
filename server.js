@@ -741,6 +741,7 @@ async function likePost(postID, userID) {
             $inc: { likes: 1 }, //increment the number of likes shown on the post
             $addToSet: { likedBy: userID } //add to the likedBy array
         },
+        
         {
             returnDocument: 'after'
         }
