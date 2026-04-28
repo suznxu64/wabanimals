@@ -723,30 +723,30 @@ app.get("/upload", (req, res) => {
 // the update document in one operation.
 async function likePost(postID, userID) {
     const db = await Connection.open(mongoUri, wabanimals_db);
-
-    postID = Number(postID);
-
-    //  check existence FIRST
+    //check first if there is a post with the post ID 
     const post = await db.collection(POSTS).findOne({ postID });
-
-    if (!post) return { error: "not_found" };
-
-    // check if already liked
+    //returns null if there is no post
+    if (!post) return null;
+    //returns null if the post has already been liked by the user
     if (post.likedBy && post.likedBy.includes(userID)) {
-        return { error: "already_liked", post };
+        return null;
     }
 
-    // perform update
-    const updated = await db.collection(POSTS).findOneAndUpdate(
-        { postID },
+    const result = await db.collection(POSTS).findOneAndUpdate(
         {
-            $inc: { likes: 1 },
-            $push: { likedBy: userID }
+            postID: postID,
+            likedBy: { $ne: userID }
         },
-        { returnDocument: 'after' }
+        {
+            $inc: { likes: 1 }, //increment the number of likes shown on the post
+            $addToSet: { likedBy: userID } //add to the likedBy array
+        },
+        {
+            returnDocument: 'after'
+        }
     );
 
-    return { post: updated.value };
+    return result; 
 }
 
 //Ajax likes for posts, a POST route that calls the likePost helper function
@@ -754,26 +754,22 @@ async function likePost(postID, userID) {
 app.post('/likeAjax/:postID', async (req, res) => {
     if (!req.session.logged_in) {
         return res.json({ error: true, message: "Login required" });
-        
     }
 
     const userID = req.session.username;
     const postID = Number(req.params.postID);
 
-    const result = await likePost(postID, userID);
+    const updated = await likePost(postID, userID);
 
-    if (result.error === "not_found") {
-        return res.json({ error: true, message: "Post not found" });
-    }
-
-    if (result.error === "already_liked") {
-        return res.json({ error: true, message: "You already liked this post" });
+    //post an error message if one of the two error cases is true (post already liked by user, or post does not exist)
+    if (updated == null ) {
+        return res.json({ error: true, message: "Already liked or post not found" });
     }
 
     return res.json({
         error: false,
-        likes: result.post.likes,
-        postID
+        likes: updated.likes,
+        postID: postID
     });
 });
 
@@ -789,37 +785,6 @@ async function main() {
     await counters.init(wabanimals_db.collection("counters"), "posts");
 
     console.log("counters initialized");
-    //inserting a post under ai106, postID = 1, 3 cute bunnies
-    //const test_insert_post = await insertNewPost(wabanimals_db, 'ai106', 'three cute bunnies', 'rabbit', 'super cute bunnies!', '2026-03-26', '10:04 AM', 'Sev Green');
-    //console.log("insertNewPost (test 3 bunnies): ", test_insert_post);
-
-    //searching for postID = 1 (3 cute bunnies)
-    //const test_find_post = await findPost(wabanimals_db, 1);
-    //console.log("findPost: ", test_find_post);
-
-    //updating bunny post to 5 cute bunnies in paramecium pond
-    //const test_update_post = await updatePost(wabanimals_db, 1, 'ai106', 'five cute bunnies', 'rabbit', 'super cute bunnies!', '2026-03-26', '10:04 AM', 'Paramecium Pond' );
-    //console.log("updatePost: ", test_update_post);
-
-    //deleting postID = 1 (3 cute bunnies)
-    //const test_delete_post = await deletePost(wabanimals_db, 1);
-    //console.log("deletePost: ", test_delete_post);
-
-    //inserting a user as ai106
-    //const test_insert_user = await insertNewUser(wabanimals_db, 'ai106', 3, true, 2, ['rabbit', 'hawk', 'goose']);
-    //console.log("insertNewUser (ai106): ", test_insert_user);
-
-    //searching for userID = ai106
-    //const test_find_user = await findUser(wabanimals_db, 'ai106');
-    //console.log("findUser: ", test_find_user);
-
-    //updating user ai106 to now sight frog as well
-    //const test_update_user = await updateUser(wabanimals_db, 'ai106', 3, true, 2, ['rabbit', 'hawk', 'goose', 'frog']);
-    //console.log("updateUser (ai106): ", test_update_user);
-
-    //deleting userID = 'ai106'
-    //const test_delete_user = await deleteUser(wabanimals_db, 'ai106');
-    //console.log("deleteUser: ", test_delete_user);
 
     await Connection.close();
 }
