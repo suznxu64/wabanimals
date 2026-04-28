@@ -54,79 +54,14 @@ Date: Home page with introductory information and live post feed
                 <% if (posts && posts.length> 0) { %>
 
                     <% posts.forEach(post=> { %>
-                        <div class="card">
-                            <div class="card-content">
+                        <%- include('partials/post_card.ejs', { post: post }) %>
+                            <% }) %>
 
-                                <!-- Text content of the post -->
-                                <div class="text">
-                                    <h2 class="post-title">
-                                        <%= post.postTitle %>
-                                    </h2>
+                                <% } else { %>
+                                    <!-- Message when no posts exist yet -->
+                                    <p>No sightings yet. Be the first to upload one!</p>
 
-                                    <p class="post-text">
-                                        <strong>Posted on:</strong>
-                                        <% if (post.createdAt) { %>
-                                            <%= new Date(post.createdAt).toLocaleDateString() %>
-                                                <% } else { %>
-                                                    Unknown time
-                                                    <% } %>
-                                    </p>
-
-                                    <p class="post-text">
-                                        <strong>Species:</strong>
-                                        <%= post.species %>
-                                    </p>
-
-                                    <p class="post-text">
-                                        <strong>Location:</strong>
-                                        <%= post.sightingLocation %>
-                                    </p>
-
-                                    <p class="post-text">
-                                        <strong>Date:</strong>
-                                        <%= post.sightingDate %> at <%= post.sightingTime %>
-                                    </p>
-                                    <p class="post-text">
-                                        <strong>Number of likes:</strong>
-                                        <span class="like-count">
-                                            <%= post.likes || 0 %>
-                                        </span>
-                                    </p>
-
-                                    <button class="likeBtn" type="button" data-postid="<%= post.postID %>">
-                                        👍 like
-                                    </button>
-
-                                    <p class="post-text">
-                                        <%= post.description %>
-                                    </p>
-                                     <% if (session.logged_in && session.username === post.userID) { %>
-                                        <a href="/update-post/<%= post.postID %>">
-                                            <button class="updateBtn">Update Post</button>
-                                        </a>
                                     <% } %>
-
-                                    <% if (session.logged_in && session.username===post.userID) { %>
-                                        <form method="POST" action="/delete-post">
-                                            <input type="hidden" name="postID" value="<%= post.postID %>">
-                                            <button class="deleteBtn" type="submit">Delete Post</button>
-                                        </form>
-                                        <% } %>
-                                </div>
-
-                                <!-- Placeholder image (since you're not doing uploads yet) -->
-                                <img class="post-img" src="/bunny.jpeg" alt="Animal image">
-
-                            </div>
-
-                        </div>
-                        <% }) %>
-
-                            <% } else { %>
-                                <!-- Message when no posts exist yet -->
-                                <p>No sightings yet. Be the first to upload one!</p>
-
-                                <% } %>
 
             </div>
 
@@ -134,20 +69,31 @@ Date: Home page with introductory information and live post feed
             <script>
                 document.querySelectorAll('.likeBtn').forEach(button => {
                     button.addEventListener('click', async () => {
-                        const postID = button.dataset.postid;
+                        try {
+                            const postID = button.dataset.postid;
 
-                        const res = await fetch(`/likeAjax/${postID}`, {
-                            method: 'POST'
-                        });
+                            const res = await fetch(`/likeAjax/${postID}`, {
+                                method: 'POST'
+                            });
 
-                        const data = await res.json();
+                            const data = await res.json();
 
-                        if (!data.error) {
-                            const likeCountSpan = button
-                                .closest('.card-content')
-                                .querySelector('.like-count');
+                            console.log("Response:", data);
 
-                            likeCountSpan.textContent = data.likes;
+                            if (!data.error) {
+                                const likeCountSpan = button
+                                    .closest('.card-content')
+                                    .querySelector('.like-count');
+
+                                if (likeCountSpan) {
+                                    likeCountSpan.textContent = data.likes;
+                                }
+                            } else {
+                                alert(data.message);
+                            }
+
+                        } catch (err) {
+                            console.error(err);
                         }
                     });
                 });
