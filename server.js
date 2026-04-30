@@ -16,6 +16,7 @@ const bcrypt = require('bcrypt');
 const multer = require('multer');
 
 const counters = require('./counters');
+const { CHAR_0 } = require('picomatch/lib/constants');
 
 const ROUNDS = 15;
 
@@ -321,8 +322,14 @@ app.get('/profile', async (req, res) => {
 
         //find user information from the collection
         const userProfile = await db.collection(USERS).findOne({ userID: userID });
+
+        const userPosts = await db.collection(POSTS)
+            .find({ userID: userID })
+            .sort({ createdAt: -1 })
+            .toArray();
+
         console.log("profile data: ", userProfile);
-        res.render("profile", { user: userProfile });
+        res.render("profile", { user: userProfile, posts:userPosts });
     } catch (error) {
         console.log(error);
         res.redirect('/home');
@@ -470,8 +477,19 @@ async function insertNewPost(db, userID, postTitle, species, image, imageName, d
     const old_admin = user.admin;
     const old_num_comments = user.numTotalComments;
     const old_species_sighted = user.speciesSighted ?? [];
+
+
     //update species with the new species in the post
-    old_species_sighted.push(species);
+    const existingPostWithSpecies = await db.collection("posts").countDocuments({
+        userID: userID,
+        species: species,
+        postID: { $ne: postID }  // exclude the post we just inserted
+    });
+
+// only add species to list if this is the first post with this species
+    if (existingPostWithSpecies === 0) {
+        old_species_sighted.push(species);
+    }    
     const new_species = old_species_sighted;
 
     //update user with the new information (adding one post and one species)
@@ -495,6 +513,10 @@ async function findPost(db, postID) {
 
 // updates post by searching for postID through database -- admin only
 async function updatePost(db, postID, userID, postTitle, species, description, sightingDate, sightingTime, sightingLocation) {
+     // get old post to compare species before updating
+    const oldPost = await db.collection("posts").findOne({ postID: postID });
+    const oldSpecies = oldPost.species;
+    
     const result = await db.collection("posts")
         .updateOne(
             //update based on postID
@@ -515,6 +537,30 @@ async function updatePost(db, postID, userID, postTitle, species, description, s
             //do not insert new post, they are in the wrong section!
             { upsert: false }
         )
+        // only update species list if species changed
+    if (oldSpecies !== species) {
+        const user = await findUser(db, userID);
+        let speciesSighted = user.speciesSighted ?? [];
+
+        // add new species if not already in list
+        if (!speciesSighted.includes(species)) {
+            speciesSighted.push(species);
+        }
+
+        // remove old species if no other posts use it
+        const otherPostsWithOldSpecies = await db.collection("posts").countDocuments({
+            userID: userID,
+            species: oldSpecies,
+            postID: { $ne: postID }
+        });
+
+        if (otherPostsWithOldSpecies === 0) {
+            speciesSighted = speciesSighted.filter(s => s !== oldSpecies);
+        }
+
+        await updateUser(db, userID, user.numPosts, user.admin, user.numTotalComments, speciesSighted);
+    }
+
     return result.modifiedCount === 1;
 }
 
@@ -614,11 +660,21 @@ async function deletePost(db, postID) {
     const old_admin = user.admin;
     const old_num_comments = user.numTotalComments;
     const old_species_sighted = user.speciesSighted ?? [];
-    //take away the species of the deleted post
-    const new_species = old_species_sighted.filter(s => s !== result.species);
 
-    //update the user profile, take away one post and one species
-    const user_result = await updateUser(db, result.userID, old_num_posts - 1, old_admin, old_num_comments, new_species);
+    // check if user has other posts with this species
+    const otherPostsWithSpecies = await db.collection("posts").countDocuments({ 
+        userID: userID, 
+        species: result.species,
+        postID: { $ne: postID }
+    });
+
+    //take away the species of the deleted post
+    const new_species = otherPostsWithSpecies > 0 
+        ? old_species_sighted 
+        : old_species_sighted.filter(s => s !== result.species);
+    
+        //update the user profile, take away one post and one species
+    const user_result = await updateUser(db, result.userID, Math.max(old_num_posts - 1,0), old_admin, old_num_comments, new_species);
     console.log("new_user_result =", user_result)
 
     //return true if one object was deleted

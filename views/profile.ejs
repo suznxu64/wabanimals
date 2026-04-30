@@ -37,10 +37,24 @@
         <h2>Species Sighted</h2>
         <div class="species-tags">
             <% (user.speciesSighted ?? []).forEach(s => { %>
-    
+                <span class="species-tag"> <%= s %></span>
             <% }) %>
         </div>
     </div>
+
+    <div class="profile-section profile-posts">
+    <h2>My Sightings</h2>
+
+    <% if (posts.length === 0) { %>
+        <p style="color: #888;">You haven't posted any sightings yet!</p>
+    <% } else { %>
+        <% posts.forEach(post => { %>
+            <%- include('partials/post_card.ejs', { post: post }) %>
+             <% }) %>
+                
+        <% } %>
+
+</div>
 </div>
 </body>
 </html>
