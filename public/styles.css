@@ -1,4 +1,4 @@
-
+@import url('https://fonts.googleapis.com/css2?family=Pacifico&family=Lato:wght@300;400&display=swap');
 /*
 Documentation
 Author: Nivale Baxendell
@@ -50,11 +50,33 @@ a {
     font-weight: 600;
 }
 
-.logo-text{
-    font-family: "Pacifico", cursive;
-    font-size: 1.8rem;
-    color: #2a6f97;
-}
+/** logo styling **/
+.logo a {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    text-decoration: none;
+  }
+  
+  .logo-paw {
+    font-size: 1.5rem;
+  }
+  
+  .logo-text {
+    font-family: 'Pacifico', cursive;
+    font-weight: bold !important; 
+    font-size: 1.6rem;
+    color: #1b4332;
+  }
+  .logo-tagline {
+    font-family: 'Lato', sans-serif;
+    font-weight: 300;
+    font-size: 0.75rem;
+    color: #888;
+    letter-spacing: 0.08em;
+    font-style: italic;
+  }
+  
 /* Main content */
 .content {
     max-width: 800px;
@@ -299,3 +321,44 @@ h1 + h3 {
 .profile-posts .card {
     margin: 15px 0;
 }
+
+/* statistics info for posts, species, and users on home page */
+.stats {
+    text-align: center;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    background: #ffffff;
+    border-radius: 8px;
+  }
+
+  .stats h2 {
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+    color: #2c2c2c;
+  }
+
+  .stats-grid {
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+  }
+
+  .stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .stat-number {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #2c7a4b;
+  }
+
+  .stat-label {
+    font-size: 1rem;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 0.3rem;
+  }

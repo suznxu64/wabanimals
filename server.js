@@ -128,9 +128,15 @@ app.get('/home', async (req, res) => {
             .sort({ createdAt: -1 }) //sort in order of most recently created
             .toArray();
 
+        const totalPosts = await db.collection(POSTS).countDocuments();
+        const totalUsers = await db.collection(USERS).countDocuments();
+        const totalSpecies = await db.collection(POSTS).distinct('species');
         // Render home.ejs and pass posts into the template
         res.render('home', {
-            posts: posts
+            posts: posts,
+            totalPosts,
+            totalUsers,
+            totalSpecies: totalSpecies.length
         });
 
     } catch (error) {
