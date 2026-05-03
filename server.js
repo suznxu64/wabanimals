@@ -89,10 +89,6 @@ var upload = multer({
             req.fileValidationError = 'HEIC images are not supported. Please convert to JPEG before uploading.';
             return cb(null, false);
         }
-        if (file.mimetype !== 'image/jpeg' && ext !== 'jpg' && ext !== 'jpeg') {
-            req.fileValidationError = 'Only JPEG images are allowed.';
-            return cb(null, false);
-        }
         cb(null, true);
     }
 });
@@ -105,18 +101,26 @@ const USERS = "users";
 const POSTS = "posts";
 
 
-
 /*
-* This / endpoint is a GET route that displays all posts from the database POSTS collection
-on a home page feed, ordered from most recently posted at the top to oldest at the bottom.
-Home page also includes some introductory page to the site. 
+* This function makes sure certain pages can only be seen when a user in logged in. 
+*/
+function requiresLogin(req, res, next) {
+    if (!req.session.username) {
+      req.flash('error', 'This page requires you to be logged in - please do so.');
+      return res.redirect("/login");
+    }
+    next();
+  }
+  
+/*
+* This / endpoint is a GET route that redirects to the register page. 
 */
 app.get('/', async (req, res) => {
     return res.redirect('/register');
 });
 
 //home page
-app.get('/home', async (req, res) => {
+app.get('/home', requiresLogin, async (req, res) => {
     try {
 
         const db = await Connection.open(mongoUri, wabanimals_db);
@@ -152,7 +156,7 @@ app.get('/home', async (req, res) => {
 /*
 * This /search endpoint is a GET 
 */
-app.get('/search', async (req, res) => {
+app.get('/search', requiresLogin, async (req, res) => {
 
     try {
         const term = req.query.term;
@@ -312,13 +316,8 @@ app.post('/logout', (req, res) => {
 
 //this endpoint takes users to their individual profile page which is linked
 //to their user account and they can see their data 
-app.get('/profile', async (req, res) => {
+app.get('/profile', requiresLogin, async (req, res) => {
     try {
-        //make sure user is logged in
-        if (!req.session.logged_in) {
-            req.flash('error', 'Please log in first.');
-            return res.redirect('/');
-        }
 
         //open wabanimals
         const db = await Connection.open(mongoUri, wabanimals_db);
@@ -343,7 +342,7 @@ app.get('/profile', async (req, res) => {
 });
 
 //renders about page through a GET route with basic exposition information
-app.get('/about', async (req, res) => {
+app.get('/about', requiresLogin, async (req, res) => {
     return res.render('about');
 })
 
@@ -356,7 +355,7 @@ app.post("/submit-post-form", upload.single('image'), async (req, res) => {
     //makes sure that the file submitted is a JPEG file
     if (req.fileValidationError) {
         req.flash('error', req.fileValidationError);
-        return res.redirect('/');
+        return res.redirect('/home');
     }
 
     try {
@@ -573,13 +572,7 @@ async function updatePost(db, postID, userID, postTitle, species, description, s
 //this endpoint is linked to a button on the post that is only visible if you are logged
 //in as the post creator
 //user can update post information based on postid
-app.get('/update-post/:postID', async (req, res) => {
-    //make sure user is logged in
-    if (!req.session.logged_in) {
-        req.flash('error', 'You must be logged in.');
-        return res.redirect('/home');
-    }
-
+app.get('/update-post/:postID', requiresLogin, async (req, res) => {
     const db = await Connection.open(mongoUri, wabanimals_db);
     const postID = parseInt(req.params.postID);
     //find post to update in the posts collection
@@ -603,13 +596,7 @@ app.get('/update-post/:postID', async (req, res) => {
 
 
 //this end point updates the post based on the form data
-app.post('/update-post/:postID', async (req, res) => {
-    //make sure user is logged in
-    if (!req.session.logged_in) {
-        req.flash('error', 'You must be logged in.');
-        return res.redirect('/home');
-    }
-
+app.post('/update-post/:postID', requiresLogin, async (req, res) => {
     const db = await Connection.open(mongoUri, wabanimals_db);
     const postID = parseInt(req.params.postID);
     //find the post to update from the collection
@@ -688,7 +675,7 @@ async function deletePost(db, postID) {
 }
 
 //this end point deletes the post on the backend (only fo admin or post author)
-app.post('/delete-post', async (req, res) => {
+app.post('/delete-post', requiresLogin, async (req, res) => {
 
     //make sure user is logged in
     if (!req.session.logged_in) {
@@ -775,7 +762,7 @@ async function deleteUser(db, userID) {
 }
 
 //upload form route
-app.get("/upload", (req, res) => {
+app.get("/upload", requiresLogin, (req, res) => {
     res.render("upload.ejs");
 });
 
@@ -814,7 +801,7 @@ async function likePost(postID, userID) {
 
 //Ajax likes for posts, a POST route that calls the likePost helper function
 // defined above in order to show post likes on the home page
-app.post('/likeAjax/:postID', async (req, res) => {
+app.post('/likeAjax/:postID', requiresLogin, async (req, res) => {
     if (!req.session.logged_in) {
         return res.json({ error: true, message: "Login required" });
     }
