@@ -49,13 +49,13 @@ Date: April 2026
             <p class="post-text">
                 <%= post.description %>
             </p>
-            <% if (session.logged_in && session.username===post.userID) { %>
+            <% if (session.logged_in && session.username===post.userID || ) { %>
                 <a href="/update-post/<%= post.postID %>">
                     <button class="updateBtn">Update Post</button>
                 </a>
                 <% } %>
 
-                    <% if (session.logged_in && session.username===post.userID) { %>
+                    <% if (session.logged_in && session.username===post.userID || isAdmin) { %>
                         <form method="POST" action="/delete-post">
                             <input type="hidden" name="postID" value="<%= post.postID %>">
                             <button class="deleteBtn" type="submit">Delete Post</button>

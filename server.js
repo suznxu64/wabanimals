@@ -132,6 +132,13 @@ app.get('/home', requiresLogin, async (req, res) => {
             .sort({ createdAt: -1 }) //sort in order of most recently created
             .toArray();
 
+        //fetch admin status when logged in
+        let isAdmin = false;
+        if (req.session.logged_in){
+            const user = await findUser(db, req.session.username);
+            isAdmin = user?.admin ?? false;
+        }
+
         const totalPosts = await db.collection(POSTS).countDocuments();
         const totalUsers = await db.collection(USERS).countDocuments();
         const totalSpecies = await db.collection(POSTS).distinct('species');
@@ -140,7 +147,8 @@ app.get('/home', requiresLogin, async (req, res) => {
             posts: posts,
             totalPosts,
             totalUsers,
-            totalSpecies: totalSpecies.length
+            totalSpecies: totalSpecies.length,
+            isAdmin
         });
 
     } catch (error) {
@@ -689,7 +697,7 @@ app.post('/delete-post', requiresLogin, async (req, res) => {
     const post = await db.collection(POSTS).findOne({ postID: postID });
 
     //only author can delete the post
-    if (post.userID !== req.session.username) {
+    if (post.userID !== req.session.username && !isAdmin) {
 
         req.flash('error', 'You can only delete your own posts if you are not admin.');
         return res.redirect('/home;')
