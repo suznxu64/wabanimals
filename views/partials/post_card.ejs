@@ -51,7 +51,7 @@ Date: April 2026
                 </a>
                 <% } %>
 
-                    <% if (session.logged_in && session.username===post.userID) { %>
+                    <% if (session.logged_in && session.username===post.userID || isAdmin) { %>
                         <form method="POST" action="/delete-post">
                             <input type="hidden" name="postID" value="<%= post.postID %>">
                             <button class="deleteBtn" type="submit">Delete Post</button>
