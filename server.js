@@ -236,26 +236,26 @@ app.get('/register', (req, res) => {
 */
 app.post('/register', async (req, res) => {
     try {
-        const username = req.body.username;
+        const userID = req.body.userID;
         const password = req.body.password;
         const db = await Connection.open(mongoUri, wabanimals_db);
-        var existingUser = await db.collection(USERS).findOne({ username: username });
+        var existingUser = await db.collection(USERS).findOne({ userID: userID });
         //flashes an error if user exists
         if (existingUser) {
             req.flash('error', "Login already exists - please try logging in instead.");
-            return res.redirect('/')
+            return res.redirect('/login')
         }
         const hash = await bcrypt.hash(password, ROUNDS);
         //inserts new user
-        const result = await insertNewUser(db, username, hash, 0, false, 0, [])
+        const result = await insertNewUser(db, userID, hash, 0, false, 0, [])
 
         if (result) {
-            console.log('successfully joined', username, password, hash);
-            req.flash('info', 'successfully joined and logged in as ' + username);
+            console.log('successfully joined', userID, password, hash);
+            req.flash('info', 'successfully joined and logged in as ' + userID);
         }
 
 
-        req.session.username = username;
+        req.session.userId = userId;
         req.session.logged_in = true;
         return res.redirect('/home');
     } catch (error) {
