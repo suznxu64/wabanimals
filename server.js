@@ -255,7 +255,7 @@ app.post('/register', async (req, res) => {
         }
 
 
-        req.session.username = username;
+        req.session.userId = userId;
         req.session.logged_in = true;
         return res.redirect('/home');
     } catch (error) {
