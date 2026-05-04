@@ -7,17 +7,19 @@ Date: 3/30
 
 <nav>
     <form action="/search" method="GET">
-        <label>Search:</label>
-        <input type="text" name="term" required value="<%= typeof term !== 'undefined' ? term : '' %>"
+        <label>Search:
+            <input type="text" name="term" required value="<%= typeof term !== 'undefined' ? term : '' %>"
             placeholder="Enter search term">
+        </label>
 
-        <label>Kind:</label>
+        <label>Kind:
         <select name="kind" required>
             <option value="" <%=!kind ? 'selected' : '' %>>choose one</option>
             <option value="species" <%=kind==='species' ? 'selected' : '' %>>species</option>
             <option value="location" <%=kind==='location' ? 'selected' : '' %>>location</option>
 
         </select>
+        </label>
 
         <button type="submit">Search</button>
     </form>

@@ -20,7 +20,7 @@ h1, h2, h3 {
 
 a {
     text-decoration: none;
-    color: rgb(53, 155, 210);
+    color: rgb(28, 67, 118);
 }
 
 /* Navbar */
@@ -72,7 +72,7 @@ a {
     font-family: 'Lato', sans-serif;
     font-weight: 300;
     font-size: 0.75rem;
-    color: #888;
+    color: rgb(56, 56, 56);
     letter-spacing: 0.08em;
     font-style: italic;
   }
@@ -199,14 +199,14 @@ h1 + h3 {
 #info {
     color: #2a6f97;
     font-style: italic;
-    font-size: 2em;
+    font-size: 1em;
     text-align: center;
 }
 
 #error {
     color: darkred;
     font-style: italic;
-    font-size: 2em;
+    font-size: 1em;
     text-align: center;
 }
 
