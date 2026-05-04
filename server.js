@@ -591,9 +591,12 @@ app.get('/update-post/:postID', requiresLogin, async (req, res) => {
         return res.redirect('/home');
     }
 
+    const currentUser = await findUser(db, req.session.username);
+    const isAdmin = currentUser?.admin ?? false;
+
     //ensure that the logged in user is the same as the user id on the post
     //only post authors (and admin) can edit posts
-    if (post.userID !== req.session.username) {
+    if (post.userID !== req.session.username && !isAdmin) {
         req.flash('error', 'You can only delete your own posts if you are not admin.');
         return res.redirect('/home;')
     }
@@ -609,14 +612,19 @@ app.post('/update-post/:postID', requiresLogin, async (req, res) => {
     const postID = parseInt(req.params.postID);
     //find the post to update from the collection
     const post = await db.collection(POSTS).findOne({ postID: postID });
+    //always use original author
+    const originalUserID = post.userID;
 
     if (!post) {
         req.flash('error', 'Post not found');
         return res.redirect('/home');
     }
 
+    const currentUser = await findUser(db, req.session.username);
+    const isAdmin = currentUser?.admin ?? false;
+
     //make sure the logged in user is the same user who created the post
-    if (post.userID !== req.session.username) {
+    if (post.userID !== req.session.username && !isAdmin) {
         req.flash('error', 'You can only update your own posts if you are not admin.');
         return res.redirect('/home;')
     }
@@ -631,7 +639,7 @@ app.post('/update-post/:postID', requiresLogin, async (req, res) => {
     }
 
     //update post with the new information
-    const result = await updatePost(db, postID, req.session.username, title, species, description, date, time, location);
+    const result = await updatePost(db, postID, originalUserID, title, species, description, date, time, location);
 
     if (result) {
         req.flash('info', 'Post updated successfully!');
@@ -696,13 +704,16 @@ app.post('/delete-post', requiresLogin, async (req, res) => {
     //find the post to delete based on the postid
     const post = await db.collection(POSTS).findOne({ postID: postID });
 
+    const currentUser = await findUser(db, req.session.username);
+    const isAdmin = currentUser?.admin ?? false;
+
     //only author can delete the post
     if (post.userID !== req.session.username && !isAdmin) {
 
         req.flash('error', 'You can only delete your own posts if you are not admin.');
-        return res.redirect('/home;')
+        return res.redirect('/home');
     }
-    //delete the post
+    //delete the post 
     const result = await deletePost(db, postID);
     if (result !== null) {
         req.flash('info', `Post number ${postID} deleted successfully.`);
