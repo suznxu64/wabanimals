@@ -41,18 +41,24 @@ Date: Home page with introductory information and live post feed
                     Only want to see specific types of posts? Use our "Search"
                     tab to filter by animal or location sighted.
                 </h3>
-                <section class = "stats">
+                <section class="stats">
                     <div class="stats-grid">
                         <div class="stat-card">
-                            <span class="stat-number"><%= totalPosts %></span>
+                            <span class="stat-number">
+                                <%= totalPosts %>
+                            </span>
                             <span class="stat-label">Posts</span>
                         </div>
                         <div class="stat-card">
-                            <span class="stat-number"><%= totalSpecies %></span>
+                            <span class="stat-number">
+                                <%= totalSpecies %>
+                            </span>
                             <span class="stat-label">Species</span>
                         </div>
                         <div class="stat-card">
-                            <span class="stat-number"><%= totalUsers %></span>
+                            <span class="stat-number">
+                                <%= totalUsers %>
+                            </span>
                             <span class="stat-label">Users</span>
                         </div>
                     </div>
@@ -112,6 +118,40 @@ Date: Home page with introductory information and live post feed
                         }
                     });
                 });
+
+                //"Client-side" frontend Javascript for handling ajax commenting
+            
+                document.querySelectorAll('.commentBtn').forEach(button => {
+                    button.addEventListener('click', async () => {
+                        const postID = button.dataset.postid;
+                        const container = button.closest('.comments-section');
+                        const input = container.querySelector('.comment-input');
+                        const text = input.value;
+
+                        if (!text.trim()) return;
+
+                        const res = await fetch(`/commentAjax/${postID}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ text })
+                        });
+
+                        const data = await res.json();
+
+                        if (!data.error) {
+                            const list = container.querySelector('.comment-list');
+
+                            list.innerHTML = data.comments.map(c => `
+                <p><strong>${c.userID}:</strong> ${c.text}</p>
+            `).join('');
+
+                            input.value = "";
+                        } else {
+                            alert(data.message);
+                        }
+                    });
+                });
+
             </script>
 
 </body>

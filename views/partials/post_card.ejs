@@ -13,6 +13,11 @@ Date: April 2026
             </h2>
 
             <p class="post-text">
+                <strong>Posted by:</strong>
+                <%= post.userID %>
+            </p>
+
+            <p class="post-text">
                 <strong>Posted on:</strong>
                 <% if (post.createdAt) { %>
                     <%= new Date(post.createdAt).toLocaleDateString() %>
@@ -35,16 +40,7 @@ Date: April 2026
                 <strong>Date:</strong>
                 <%= post.sightingDate %> at <%= post.sightingTime %>
             </p>
-            <p class="post-text">
-                <strong>Number of likes:</strong>
-                <span class="like-count">
-                    <%= post.likes || 0 %>
-                </span>
-            </p>
 
-            <button class="likeBtn" type="button" data-postid="<%= post.postID %>">
-                👍 like
-            </button>
 
             <p class="post-text">
                 <%= post.description %>
@@ -65,6 +61,60 @@ Date: April 2026
 
         <!-- actual image -->
         <img class="post-image" src="/uploads/<%= post.imageName %>" alt="<%= post.title %>">
+
+        <!--"Like" section-->
+        <div class="post-actions">
+
+            <button class="likeBtn" type="button" data-postid="<%= post.postID %>">
+                👍 Like
+            </button>
+            
+            <p class="post-text like-text">
+                <strong>Likes:</strong>
+                <span class="like-count">
+                    <%= post.likes || 0 %>
+                </span>
+            </p>
+
+
+
+        </div>
+
+        <div class="comments-section">
+
+            <!--Comment section-->
+            <div class="comments-header">
+                💬 Comments (<%= post.comments ? post.comments.length : 0 %>)
+            </div>
+
+            <div class="comment-list">
+                <% if (post.comments && post.comments.length> 0) { %>
+                    <% post.comments.forEach(c=> { %>
+                        <div class="comment">
+                            <span class="comment-user">
+                                <%= c.userID %>
+                            </span>
+                            <span class="comment-text">
+                                <%= c.text %>
+                            </span>
+                        </div>
+                        <% }) %>
+                            <% } else { %>
+                                <div class="no-comments">No comments yet.</div>
+                                <% } %>
+            </div>
+
+            <% if (session.logged_in) { %>
+                <form class="comment-form">
+                    <input type="text" class="comment-input" placeholder="Write a comment..." required>
+                    <button type="button" class="commentBtn" data-postid="<%= post.postID %>">
+                        Post
+                    </button>
+                </form>
+                <% } %>
+
+        </div>
+
 
     </div>
 

@@ -362,3 +362,123 @@ h1 + h3 {
     letter-spacing: 0.1em;
     margin-top: 0.3rem;
   }
+
+/* LIKE SECTION */
+.post-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+}
+
+/* like text */
+.like-text {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #444;
+}
+
+/* like button */
+.likeBtn {
+    background-color: #d8f3dc;
+    color: #1b4332;
+    border: 1px solid #b7e4c7;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 0.9rem;
+    margin: 5px;
+
+}
+
+/* like count emphasis */
+.like-count {
+    font-weight: 600;
+    color: #2d6a4f;
+}
+
+  /* COMMENTS SECTION */
+.comments-section {
+    margin-top: 15px;
+    padding-top: 12px;
+    border-top: 1px solid #eee;
+    text-align: left;
+}
+
+/* header */
+.comments-header {
+    font-weight: 600;
+    color: #1b4332;
+    margin-bottom: 10px;
+    font-size: 0.95rem;
+}
+
+/* comment list container */
+.comment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+/* individual comment bubble */
+.comment {
+    background-color: #f5f7fa;
+    border-radius: 10px;
+    padding: 8px 10px;
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+}
+
+/* username styling */
+.comment-user {
+    font-weight: 600;
+    color: #2d6a4f;
+    font-size: 0.9rem;
+}
+
+/* comment text */
+.comment-text {
+    color: #444;
+    font-size: 0.9rem;
+}
+
+/* empty state */
+.no-comments {
+    font-size: 0.85rem;
+    color: #888;
+    font-style: italic;
+}
+
+/* input + button row */
+.comment-form {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.comment-input {
+    flex: 1;
+    padding: 8px 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.comment-input:focus {
+    border-color: #2d6a4f;
+}
+
+/* comment button */
+.commentBtn {
+    background-color: #1b4332;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
