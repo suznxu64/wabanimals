@@ -1,0 +1,87 @@
+<!--Documentation
+Author: Nivale, Suzy, Ari
+Description: Form for users to upload posts 
+Date: April 2026
+-->
+
+
+<form class="form-template" id="post-form" action="/submit-post-form" method="POST" enctype="multipart/form-data" >
+    <p><label>Title: <input name="title"></label></p>
+
+    <label>Upload image(s)
+        <input type="file" accept="image/*" name="image" >
+    </label>
+
+    <p>
+        <label for="species">Species</label>
+        <select id="species" name="species">
+            <option value="">choose species</option>
+            <option value="goose">goose</option>
+            <option value="swan">swan</option>
+            <option value="turkey">turkey</option>
+            <option value="owl">owl</option>
+            <option value="deer">deer</option>
+            <option value="duck">duck</option>
+            <option value="hawk">hawk</option>
+            <option value="bird(other)">bird</option>
+            <option value="rabbit">rabbit</option>
+            <option value="squirrel">squirrel</option>
+            <option value="chipmunk">chipmunk</option>
+            <option value="groundhog">groundhog</option>
+            <option value="deer">deer</option>
+            <option value="fox">fox</option>
+            <option value="coyote">coyote</option>
+            <option value="raccoon">raccoon</option>
+            <option value="mouse">mouse</option>
+            <option value="rat">rat</option>
+            <option value="beaver">beaver</option>
+            <option value="turtle">turtle</option>
+            <option value="lizard">lizard</option>
+            <option value="frog">frog</option>
+            <option value="fish">fish</option>
+            <option value="other">other</option> <!--add text box -->
+        </select>
+    </p>
+
+
+    <p><!--Location -->
+        <label for="location">Sighting Location</label>
+        <select id="location" name="location">
+            <option value="">choose location</option>
+            <option value="Tower Court">Tower Court</option>
+            <option value="Quint">Quint</option>
+            <option value="Munger Meadow">Munger Meadow</option>
+            <option value="Stone D">Stone D</option>
+            <option value="Bates/McAfee/Freeman">Bates/McAfee/Freeman</option>
+            <option value="Academic Quad">Academic Quad</option>
+            <option value="Paramecium Pond">Paramecium Pond</option>
+            <option value="Edible Ecosystem">Edible Ecosystem</option>
+            <option value="Wellesley Botanical Gardens">Wellesley Botanical Gardens</option>
+            <option value="Tupelo Point">Tupelo Point</option>
+            <option value="Tupelo Lane">Tupelo Lane</option>
+            <option value="Lake Waban">Lake Waban</option>
+            <option value="squirrel">Lake Path </option>
+            <option value="Severance Green">Severance Green</option>
+            <option value="KSC">KSC</option>
+            <option value="Alumnae Valley">Alumnae Valley</option>
+            <option value="Green Beach">Green Beach</option>
+            <option value="Clapp Library">Clapp Library</option>
+            <option value="College Club">College Club</option>
+            <option value="Mods to Ville path">Mods to Ville path</option>
+            <option value="other">other</option> <!--add text box -->
+        </select>
+    </p>
+    <p><label>Sighting time:
+            <input name="time" type="time" min="00:00" max="23:59" step="60">
+        </label></p>
+
+    <p><label>Sighting date:
+            <input name="date" type="date" value="2026-03-25" min="2026-03-25">
+        </label></p>
+
+    <p>
+        <label for="description">Description of your sighting:</label>
+        <textarea id="description" rows="3" cols="30" name="description"></textarea>
+    </p>
+    <p><button type="submit">Submit post</button></p>
+</form>
