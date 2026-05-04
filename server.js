@@ -144,6 +144,7 @@ app.get('/home', requiresLogin, async (req, res) => {
             .sort({ createdAt: -1 }) //sort in order of most recently created
             .toArray();
 
+    
 
         const totalPosts = await db.collection(POSTS).countDocuments();
         const totalUsers = await db.collection(USERS).countDocuments();
@@ -518,6 +519,7 @@ async function insertNewPost(db, userID, postTitle, species, image, imageName, d
         sightingLocation: sightingLocation,
         likes: 0,
         likedBy: [],
+        comments: [],
         createdAt: new Date()
     }
 
@@ -881,6 +883,52 @@ app.post('/likeAjax/:postID', requiresLogin, async (req, res) => {
     return res.json({
         error: false,
         likes: updated.likes,
+        postID: postID
+    });
+});
+
+//COMMENTING
+async function addComment(postID, userID, text) {
+    const db = await Connection.open(mongoUri, wabanimals_db);
+    const post = await db.collection(POSTS).findOne({ postID });
+    //returns null if there is no post
+    if (!post) return null;
+
+
+    const comment = {
+        userID: userID,
+        text: text,
+        createdAt: new Date()
+    };
+
+    const result = await db.collection(POSTS).findOneAndUpdate(
+        { postID: postID },
+        { $push: { comments: comment } },
+        { returnDocument: 'after' }
+    );
+
+    return result;
+}
+
+//AJAX ENDPOINT COMMENTING 
+app.post('/commentAjax/:postID', async (req, res) => {
+    if (!req.session.logged_in) {
+        return res.json({ error: true, message: "Login required" });
+    }
+
+    const userID = req.session.username;
+    const postID = Number(req.params.postID);
+    const text = req.body.text;
+
+    const updated = await addComment(postID, userID, text);
+
+    if (updated == null ) {
+        return res.json({ error: true, message: "Comment failed" });
+    }
+
+    return res.json({
+        error: false,
+        comments: updated.comments,
         postID: postID
     });
 });
