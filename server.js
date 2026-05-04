@@ -49,10 +49,22 @@ app.use(cookieSession({
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }))
 
-app.use((req, res, next) => {
+
+app.use(async (req, res, next) => {
     res.locals.session = req.session;
+    res.locals.isAdmin = false;
+    if (req.session.logged_in) {
+        try {
+            const db = await Connection.open(mongoUri, wabanimals_db);
+            const user = await findUser(db, req.session.username);
+            res.locals.isAdmin = user?.admin ?? false;
+        } catch (error) {
+            console.log('error fetching admin status:', error);
+        }
+    }
     next();
 });
+
 
 
 function timeString(dateObj) {
@@ -132,12 +144,6 @@ app.get('/home', requiresLogin, async (req, res) => {
             .sort({ createdAt: -1 }) //sort in order of most recently created
             .toArray();
 
-        //fetch admin status when logged in
-        let isAdmin = false;
-        if (req.session.logged_in){
-            const user = await findUser(db, req.session.username);
-            isAdmin = user?.admin ?? false;
-        }
 
         const totalPosts = await db.collection(POSTS).countDocuments();
         const totalUsers = await db.collection(USERS).countDocuments();
@@ -148,7 +154,6 @@ app.get('/home', requiresLogin, async (req, res) => {
             totalPosts,
             totalUsers,
             totalSpecies: totalSpecies.length,
-            isAdmin
         });
 
     } catch (error) {
@@ -348,6 +353,44 @@ app.get('/profile', requiresLogin, async (req, res) => {
         res.redirect('/home');
     }
 });
+
+
+app.get('/admin', requiresLogin, async(req, res) => {
+    //find user information from the collection
+
+    const db = await Connection.open(mongoUri, wabanimals_db)
+    const currentUser = await findUser(db, req.session.username);
+    const isAdmin = currentUser?.admin ?? false;
+
+    if (!isAdmin) {
+        req.flash('error', 'You cannot view this page.');
+        res.redirect('/home');
+    }
+
+    const users = await db.collection(USERS).find({}).toArray();
+
+    return res.render('admin.ejs', {users})
+
+})
+
+app.post("/admin/ban/:username", requiresLogin, async(req,res) => {
+    const db = await Connection.open(mongoUri, wabanimals_db)
+
+    const currentUser = await findUser(db, req.session.username);
+    const isAdmin = currentUser?.admin ?? false;
+
+    if (!isAdmin) {
+        req.flash('error', 'You cannot view this page.');
+        res.redirect('/home');
+    }
+
+    await db.collection('users').deleteOne(
+        {userID: req.params.username}
+    )
+
+    req.flash('info', `User ${req.params.username} deleted.`);
+    return res.redirect('/admin');  
+})
 
 //renders about page through a GET route with basic exposition information
 app.get('/about', requiresLogin, async (req, res) => {
