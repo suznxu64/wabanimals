@@ -15,27 +15,46 @@
             <div class="form-template">
     <h1>Admin Panel</h1>
     <table style="width:100%; border-collapse: collapse;">
-      <thead>
+     <thead>
+    <tr>
+        <th style="text-align:left; padding: 0.5rem; border-bottom: 2px solid #ddd;">Username</th>
+        <th style="text-align:left; padding: 0.5rem; border-bottom: 2px solid #ddd;">Admin Status</th>
+        <th style="text-align:left; padding: 0.5rem; border-bottom: 2px solid #ddd;">Toggle Admin</th>
+        <th style="text-align:left; padding: 0.5rem; border-bottom: 2px solid #ddd;">Delete User</th>
+    </tr>
+</thead>
+<tbody>
+    <% users.forEach(user => { %>
         <tr>
-          <th style="text-align:left; padding: 0.5rem; border-bottom: 2px solid #ddd;">Username</th>
-          <th style="text-align:left; padding: 0.5rem; border-bottom: 2px solid #ddd;">Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% users.forEach(user => { %>
-          <tr>
-            <td style="padding: 0.5rem; border-bottom: 1px solid #eee;"><%= user.userID %></td>
+            <td style="padding: 0.5rem; border-bottom: 1px solid #eee;">
+                <%= user.userID %>
             </td>
             <td style="padding: 0.5rem; border-bottom: 1px solid #eee;">
-
+                <% if (user.admin) { %>
+                    <span class="admin-badge admin">Admin</span>
+                <% } else { %>
+                    <span class="admin-badge user">User</span>
+                <% } %>
+            </td>
+            <td style="padding: 0.5rem; border-bottom: 1px solid #eee;">
+                <% if (user.admin) { %>
+                    <form method="POST" action="/admin/remove-admin/<%= user.userID %>">
+                        <button type="submit" class="adminBtn remove">Remove Admin</button>
+                    </form>
+                <% } else { %>
+                    <form method="POST" action="/admin/make-admin/<%= user.userID %>">
+                        <button type="submit" class="adminBtn make">Make Admin</button>
+                    </form>
+                <% } %>
+            </td>
+            <td style="padding: 0.5rem; border-bottom: 1px solid #eee;">
                 <form method="POST" action="/admin/ban/<%= user.userID %>">
-                  <button type="submit">Delete</button>
+                    <button type="submit" class="adminBtn delete">Delete User</button>
                 </form>
             </td>
-          </tr>
-        <% }); %>
-      </tbody>
-    </table>
+        </tr>
+    <% }); %>
+</tbody>
   </div>
 
 

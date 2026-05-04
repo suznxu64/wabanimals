@@ -482,3 +482,52 @@ h1 + h3 {
     cursor: pointer;
 }
 
+.admin-badge {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.admin-badge.admin {
+    background-color: #d8f3dc;
+    color: #1b4332;
+}
+
+.admin-badge.user {
+    background-color: #f5f7fa;
+    color: #888;
+}
+
+.adminBtn {
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: white;
+}
+
+.adminBtn.make {
+    background-color: #2a6f97;
+}
+
+.adminBtn.make:hover {
+    background-color: #1b4332;
+}
+
+.adminBtn.remove {
+    background-color: #e8a838;
+}
+
+.adminBtn.remove:hover {
+    background-color: #c7872a;
+}
+
+.adminBtn.delete {
+    background-color: rgb(232, 93, 93);
+}
+
+.adminBtn.delete:hover {
+    background-color: darkred;
+}

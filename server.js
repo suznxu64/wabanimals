@@ -17,6 +17,7 @@ const multer = require('multer');
 
 const counters = require('./counters');
 const { CHAR_0 } = require('picomatch/lib/constants');
+const { runInNewContext } = require('vm');
 
 const ROUNDS = 15;
 
@@ -391,6 +392,46 @@ app.post("/admin/ban/:username", requiresLogin, async(req,res) => {
 
     req.flash('info', `User ${req.params.username} deleted.`);
     return res.redirect('/admin');  
+})
+
+app.post("/admin/make-admin/:username", requiresLogin, async(req,res) => {
+    const db = await Connection.open(mongoUri, wabanimals_db)
+
+    const currentUser = await findUser(db, req.session.username);
+    const isAdmin = currentUser?.admin ?? false;
+
+    if (!isAdmin) {
+        req.flash('error', 'You cannot view this page.');
+        res.redirect('/home');
+    }
+
+    await db.collection('users').updateOne(
+        {userID: req.params.username}, 
+        {$set: {admin: true}}
+    )
+
+     req.flash('info', `User ${req.params.username} is now admin.`);
+    return res.redirect('/admin'); 
+})
+
+app.post("/admin/remove-admin/:username", requiresLogin, async(req, res) => {
+    const db = await Connection.open(mongoUri, wabanimals_db)
+
+    const currentUser = await findUser(db, req.session.username);
+    const isAdmin = currentUser?.admin ?? false;
+
+    if (!isAdmin) {
+        req.flash('error', 'You cannot view this page.');
+        res.redirect('/home');
+    }
+
+    await db.collection('users').updateOne(
+        {userID: req.params.username}, 
+        {$set: {admin: false}}
+    )
+
+    req.flash('info', `User ${req.params.username} is no longer admin.`);
+    return res.redirect('/admin');
 })
 
 //renders about page through a GET route with basic exposition information
