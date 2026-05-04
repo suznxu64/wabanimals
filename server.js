@@ -138,7 +138,7 @@ app.get('/home', requiresLogin, async (req, res) => {
             const user = await findUser(db, req.session.username);
             isAdmin = user?.admin ?? false;
         }
-
+ 
         const totalPosts = await db.collection(POSTS).countDocuments();
         const totalUsers = await db.collection(USERS).countDocuments();
         const totalSpecies = await db.collection(POSTS).distinct('species');
