@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Pacifico&family=Lato:wght@300;400&display=swap');
 /*
 Documentation
-Author: Nivale Baxendell
+Author: Nivale Baxendell, Suzy, Ari 
 Date: April 2026
 Description: Basic styling for all of wabanimals site
 */
@@ -365,12 +365,13 @@ h1 + h3 {
 
 /* LIKE SECTION */
 .post-actions {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
     margin-top: 12px;
     padding-top: 10px;
     border-top: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
 }
 
 /* like text */
@@ -380,22 +381,29 @@ h1 + h3 {
     color: #444;
 }
 
-/* like button */
-.likeBtn {
-    background-color: #d8f3dc;
-    color: #1b4332;
-    border: 1px solid #b7e4c7;
-    border-radius: 20px;
-    padding: 6px 14px;
-    font-size: 0.9rem;
-    margin: 5px;
-
-}
-
-/* like count emphasis */
+/* like count */
 .like-count {
     font-weight: 600;
     color: #2d6a4f;
+}
+
+/* like button  */
+.likeBtn {
+    background-color: #f5f7fa;         
+    color: #1b4332;
+    border: 1px solid #ddd;
+    border-radius: 8px;                   
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+/* hover effect*/
+.likeBtn:hover {
+    background-color: #1b4332;
+    color: white;
+    border-color: #1b4332;
 }
 
   /* COMMENTS SECTION */
