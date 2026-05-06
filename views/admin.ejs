@@ -1,3 +1,9 @@
+<!--
+Author: Nivale Baxendell, Ariana, Inamdar
+Description: Admin dashboard for admin only to update the user database
+Date: 3/30
+-->
+
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -24,12 +30,14 @@
     </tr>
 </thead>
 <tbody>
+<!-- for each user in the database, display in a table on the admin dashboard-->
     <% users.forEach(user => { %>
         <tr>
             <td style="padding: 0.5rem; border-bottom: 1px solid #eee;">
                 <%= user.userID %>
             </td>
             <td style="padding: 0.5rem; border-bottom: 1px solid #eee;">
+                <!-- display admin status for each user-->
                 <% if (user.admin) { %>
                     <span class="admin-badge admin">Admin</span>
                 <% } else { %>
@@ -37,17 +45,20 @@
                 <% } %>
             </td>
             <td style="padding: 0.5rem; border-bottom: 1px solid #eee;">
+                 <!-- if user is already admin, allow remove admin button-->
                 <% if (user.admin) { %>
                     <form method="POST" action="/admin/remove-admin/<%= user.userID %>">
                         <button type="submit" class="adminBtn remove">Remove Admin</button>
                     </form>
                 <% } else { %>
+                     <!-- if not, make admin button-->
                     <form method="POST" action="/admin/make-admin/<%= user.userID %>">
                         <button type="submit" class="adminBtn make">Make Admin</button>
                     </form>
                 <% } %>
             </td>
             <td style="padding: 0.5rem; border-bottom: 1px solid #eee;">
+                 <!-- delete button for all users -->
                 <form method="POST" action="/admin/ban/<%= user.userID %>">
                     <button type="submit" class="adminBtn delete">Delete User</button>
                 </form>

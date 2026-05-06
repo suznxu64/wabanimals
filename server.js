@@ -7,12 +7,13 @@ const bodyParser = require('body-parser');
 const cookieSession = require('cookie-session');
 
 // our modules loaded from cwd
-
 const { Connection } = require('./connection');
 const cs304 = require('./cs304');
 const { add, result, find } = require('lodash');
 const flash = require('express-flash');
+//bcrypt for passwords
 const bcrypt = require('bcrypt');
+//multer for image upload
 const multer = require('multer');
 
 const counters = require('./counters');
@@ -55,13 +56,16 @@ app.use(cookieSession({
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }))
 
+//setting up admin status and admin boolean
 app.use(async (req, res, next) => {
     res.locals.session = req.session;
+    //default set isAdmin as false unless otherwise designated
     res.locals.isAdmin = false;
     if (req.session.logged_in) {
         try {
             const db = await Connection.open(mongoUri, wabanimals_db);
             const user = await findUser(db, req.session.userID);
+            //make isAdmin accessible throughout server.js
             res.locals.isAdmin = user?.admin ?? false;
         } catch (error) {
             console.log('error fetching admin status:', error);
@@ -70,12 +74,13 @@ app.use(async (req, res, next) => {
     next();
 });
 
-//declaring wabanimals our db for all functions/queries
+//declaring constants variables and upload directory
 const wabanimals_db = "wabanimals";
 const USERS = "users";
 const POSTS = "posts";
 const UPLOAD_DIR = '/students/wabanimals/uploads';
 
+//converts date object into strings
 function timeString(dateObj) {
     if (!dateObj) {
         dateObj = new Date();
@@ -90,7 +95,7 @@ function timeString(dateObj) {
 
 
 
-//configures storage property of Milter
+//configures storage property of Multer
 var storage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, UPLOAD_DIR)
@@ -103,11 +108,12 @@ var storage = multer.diskStorage({
     }
 })
 
-//creates a middleware function using the milter model
+//creates a middleware function using the Multer model
 var upload = multer({
     storage: storage, limits: { fileSize: 10 * 1024 * 1024 },
     fileFilter: function (req, file, cb) {
         const ext = file.originalname.toLowerCase().split('.').pop();
+        //doesn't allow heic files
         if (ext === 'heic') {
             req.fileValidationError = 'HEIC images are not supported. Please convert to JPEG before uploading.';
             return cb(null, false);
@@ -122,15 +128,18 @@ const mongoUri = cs304.getMongoUri();
 
 /*
 * This function makes sure certain pages can only be seen when a user in logged in. 
+* @param req 
+* @param res
+* @param next
 */
 function requiresLogin(req, res, next) {
     if (!req.session.userID) {
-      req.flash('error', 'This page requires you to be logged in - please do so.');
-      return res.redirect("/login");
+        req.flash('error', 'This page requires you to be logged in - please do so.');
+        return res.redirect("/login");
     }
     next();
-  }
-  
+}
+
 /*
 * This / endpoint is a GET route that redirects to the register page. 
 */
@@ -138,7 +147,9 @@ app.get('/', async (req, res) => {
     return res.redirect('/register');
 });
 
-//home page
+/*
+* This /home endpoint is a GET route that renders the home page. 
+*/
 app.get('/home', requiresLogin, async (req, res) => {
     try {
 
@@ -151,7 +162,7 @@ app.get('/home', requiresLogin, async (req, res) => {
             .sort({ createdAt: -1 }) //sort in order of most recently created
             .toArray();
 
-    
+
 
         const totalPosts = await db.collection(POSTS).countDocuments();
         const totalUsers = await db.collection(USERS).countDocuments();
@@ -175,7 +186,7 @@ app.get('/home', requiresLogin, async (req, res) => {
 });
 
 /*
-* This /search endpoint is a GET 
+* This /search endpoint is a GET that renders the search page
 */
 app.get('/search', requiresLogin, async (req, res) => {
 
@@ -240,6 +251,7 @@ app.get('/register', (req, res) => {
 /*
 * This endpoint takes in the information from the form, creating a new user if the user does not exist in the
 * USERS document. If the user already exists, then flashes an error on screen, indicating to user that they should login.
+* Redirects to homge page if successful.
 */
 app.post('/register', async (req, res) => {
     try {
@@ -286,7 +298,7 @@ app.get('/login', (req, res) => {
 /*
 * This endpoint takes in the information from the form, logging the user into their account if it exists in the USERS document.
 * If user does not exist or information is incorrect, then flashes an error indicating said issue to user. Redirects user to
-* home page.
+* home page if successful.
 */
 app.post("/login", async (req, res) => {
     try {
@@ -311,7 +323,7 @@ app.post("/login", async (req, res) => {
             return res.redirect('/login')
         }
         req.flash('info', 'successfully logged in as ' + userID);
-        req.session.userID= userID;
+        req.session.userID = userID;
         req.session.logged_in = true;
         console.log('login as', userID);
         return res.redirect('/home');
@@ -343,8 +355,10 @@ app.post('/logout', (req, res) => {
     }
 });
 
-//this endpoint takes users to their individual profile page which is linked
-//to their user account and they can see their data 
+/*
+* This endpoint takes users to their individual profile page which is linked 
+* to their user account and they can see their data 
+*/
 app.get('/profile', requiresLogin, async (req, res) => {
     try {
 
@@ -363,87 +377,123 @@ app.get('/profile', requiresLogin, async (req, res) => {
             .toArray();
 
         console.log("profile data: ", userProfile);
-        res.render("profile", { user: userProfile, posts:userPosts });
+        res.render("profile", { user: userProfile, posts: userPosts });
     } catch (error) {
         console.log(error);
         res.redirect('/home');
     }
 });
 
-
-app.get('/admin', requiresLogin, async(req, res) => {
+/*
+* This endpoint takes users to admin page/dashboard which they are only
+* allowed to see if they have admin status
+* in the dashboard they can delete users and designate users as admin
+*/
+app.get('/admin', requiresLogin, async (req, res) => {
     //find user information from the collection
-
     const db = await Connection.open(mongoUri, wabanimals_db)
     const currentUser = await findUser(db, req.session.userID);
     const isAdmin = currentUser?.admin ?? false;
 
+    //makes sure that user is admin status
     if (!isAdmin) {
         req.flash('error', 'You cannot view this page.');
         res.redirect('/home');
     }
 
+    //collect all users in the database to display for admin
     const users = await db.collection(USERS).find({}).toArray();
 
-    return res.render('admin.ejs', {users})
-
+    return res.render('admin.ejs', { users })
 })
 
-app.post("/admin/ban/:userID", requiresLogin, async(req,res) => {
+/*
+* This endpoint is connected to a button on the admin dashboard
+* where admin can delete (or ban) users at their discretion.
+* this endpoint deletes users from the databse
+*/
+app.post("/admin/ban/:userID", requiresLogin, async (req, res) => {
+    //load database
     const db = await Connection.open(mongoUri, wabanimals_db)
 
+    //find user currently logged in to check if admin
     const currentUser = await findUser(db, req.session.userID);
     const isAdmin = currentUser?.admin ?? false;
 
+    //make sure current user is admin status
     if (!isAdmin) {
         req.flash('error', 'You cannot view this page.');
         res.redirect('/home');
     }
 
+    //delete user with the param userID
     await db.collection('users').deleteOne(
-        {userID: req.params.userID}
+        { userID: req.params.userID }
     )
 
+    //tells admin that user is deleted and redirects to the updated dashboard
     req.flash('info', `User ${req.params.userID} deleted.`);
-    return res.redirect('/admin');  
+    return res.redirect('/admin');
 })
 
-app.post("/admin/make-admin/:userID", requiresLogin, async(req,res) => {
+/*
+* This endpoint is connected to a button on the admin dashboard
+* where admin can make users admin at their discretion.
+* this endpoint changes the isAdmin from false to true in the databse
+*/
+app.post("/admin/make-admin/:userID", requiresLogin, async (req, res) => {
+    //load database
     const db = await Connection.open(mongoUri, wabanimals_db)
 
+    //find user that is currently logged in to check if admin
     const currentUser = await findUser(db, req.session.userID);
     const isAdmin = currentUser?.admin ?? false;
 
+    //check that current logged in is 
     if (!isAdmin) {
         req.flash('error', 'You cannot view this page.');
         res.redirect('/home');
     }
 
+    //update user based on the userID in the params (from the button linked to profile)
     await db.collection('users').updateOne(
-        {userID: req.params.userID}, 
-        {$set: {admin: true}}
+        { userID: req.params.userID },
+        //update only admin status
+        { $set: { admin: true } }
     )
 
-     req.flash('info', `User ${req.params.userID} is now admin.`);
-    return res.redirect('/admin'); 
+    //flash message about admin status being updated and redirect to admin dashboard
+    req.flash('info', `User ${req.params.userID} is now admin.`);
+    return res.redirect('/admin');
 })
 
-app.post("/admin/remove-admin/:userID", requiresLogin, async(req, res) => {
+/*
+* This endpoint is connected to a button on the admin dashboard
+* where admin can take away user admin status at their discretion
+* this endpoint changes admin status from true to false in the database
+*/
+app.post("/admin/remove-admin/:userID", requiresLogin, async (req, res) => {
+    //load database
     const db = await Connection.open(mongoUri, wabanimals_db)
 
+    //check current user/logged in user is admin
     const currentUser = await findUser(db, req.session.userID);
     const isAdmin = currentUser?.admin ?? false;
 
+    //if not admin, send them away from admin dashboard
     if (!isAdmin) {
         req.flash('error', 'You cannot view this page.');
         res.redirect('/home');
     }
 
+    //updates user based on the param userID from the linked button
     await db.collection('users').updateOne(
-        {userID: req.params.userID}, 
-        {$set: {admin: false}}
+        { userID: req.params.userID },
+        //only change admin status to false
+        { $set: { admin: false } }
     )
 
+    //flash that admin status has been updated and send back to updated dashboard
     req.flash('info', `User ${req.params.userID} is no longer admin.`);
     return res.redirect('/admin');
 })
@@ -467,47 +517,44 @@ app.post("/submit-post-form", upload.single('image'), async (req, res) => {
 
     await fs.promises.chmod(req.file.path, 0o644);
 
-
     try {
         const db = await Connection.open(mongoUri, wabanimals_db);
         //collect title from the form
         const post_title = req.body.title;
-        console.log("title: ", post_title)
-
-
+        //console.log("title: ", post_title)
 
         //collect species from form
         const species = req.body.species;
-        console.log("species: ", species)
-
+        //console.log("species: ", species)
 
         //collect image from form
         const image = req.file;
-        console.log("image: ", image);
+        //console.log("image: ", image);
 
         //collects the image's file name from form
         const imageName = req.file.filename;
-        console.log("imageName: ", imageName);
+        //console.log("imageName: ", imageName);
 
         //collect location from form
         const location = req.body.location;
-        console.log("location: ", location);
+        //console.log("location: ", location);
 
         //collect sightingTime from form
         const sightingTime = req.body.time;
-        console.log("sightingTime: ", sightingTime);
+        //console.log("sightingTime: ", sightingTime);
 
         //collect sightingDate from form
         const sightingDate = req.body.date;
-        console.log("sightingDate: ", sightingDate);
+        //console.log("sightingDate: ", sightingDate);
 
         //collect description from form
         const description = req.body.description;
-        console.log("description: ", description);
+        //console.log("description: ", description);
 
-        // get user from session - not running yet
-        const userID = req.session.username;
+        // get user from session
+        const userID = req.session.userID;
 
+        //check for valid image upload
         if (req.fileValidationError) {
             req.flash('error', req.fileValidationError);
             return res.redirect('/home');
@@ -525,7 +572,7 @@ app.post("/submit-post-form", upload.single('image'), async (req, res) => {
         const result = await insertNewPost(db, userID, post_title, species, image, imageName, description, sightingDate, sightingTime, location);
         console.log("inserting postID ", result.postID, "into POSTS: ", result)
 
-        //insert a flash here saying your post has been uploaded?
+        //insert a flash here saying your post has been uploaded
         if (result) {
             req.flash('info', `You have successfully uploaded your post! Your postID = ${result.postID}`);
             return res.redirect('/home');
@@ -557,6 +604,7 @@ async function incr(counters, key) {
 //inserts new post entry with inputted parameters, some from back end, some from form
 async function insertNewPost(db, userID, postTitle, species, image, imageName, description, sightingDate, sightingTime, sightingLocation) {
 
+    //counters from scott's code to implement postID
     const counters = db.collection("counters");
 
     const postID = await incr(counters, "posts")
@@ -574,23 +622,28 @@ async function insertNewPost(db, userID, postTitle, species, image, imageName, d
         sightingDate: sightingDate,
         sightingTime: sightingTime,
         sightingLocation: sightingLocation,
+        //initialize at zero likes and zero comments
         likes: 0,
         likedBy: [],
         comments: [],
         createdAt: new Date()
     }
 
-    console.log("newPost: ", newPost);
+    //console.log("newPost: ", newPost);
+
+    //insert post into the database
     const result = await db.collection("posts").insertOne(newPost);
     //return true when result is within the database and returns postid to find later
     console.log("your postID is: ", postID)
 
     //connect to user database to add userid to the post
     const user = await findUser(db, userID);
-    //collect data about the user from the user database
+
+    //collect data about the user from the user database before updating
     let old_num_posts = user.numPosts;
     const old_admin = user.admin;
     const old_num_comments = user.numTotalComments;
+    //if no species sighted, leave as empty array
     const old_species_sighted = user.speciesSighted ?? [];
 
 
@@ -601,16 +654,17 @@ async function insertNewPost(db, userID, postTitle, species, image, imageName, d
         postID: { $ne: postID }  // exclude the post we just inserted
     });
 
-// only add species to list if this is the first post with this species
+    // only add species to list if this is the first post with this species
     if (existingPostWithSpecies === 0) {
         old_species_sighted.push(species);
-    }    
+    }
     const new_species = old_species_sighted;
 
-    //update user with the new information (adding one post and one species)
+    //update user with the new information (adding one post and one species if not already present)
     const user_result = await updateUser(db, userID, old_num_posts + 1, old_admin, old_num_comments, new_species);
     console.log("new_user_result =", user_result)
 
+    //return that both the post and the user documents were updated
     return {
         postSuccess: result.acknowledged,
         userSuccess: user_result.acknowledged,
@@ -626,12 +680,12 @@ async function findPost(db, postID) {
     return post;
 }
 
-// updates post by searching for postID through database -- admin only
+// updates post by searching for postID through database -- admin or author only
 async function updatePost(db, postID, userID, postTitle, species, imageName, description, sightingDate, sightingTime, sightingLocation) {
-     // get old post to compare species before updating
+    // get old post to compare species before updating
     const oldPost = await db.collection("posts").findOne({ postID: postID });
     const oldSpecies = oldPost.species;
-    
+
     const result = await db.collection("posts")
         .updateOne(
             //update based on postID
@@ -654,7 +708,7 @@ async function updatePost(db, postID, userID, postTitle, species, imageName, des
             //do not insert new post, they are in the wrong section!
             { upsert: false }
         )
-        // only update species list if species changed
+    // only update species list if species changed
     if (oldSpecies !== species) {
         const user = await findUser(db, userID);
         let speciesSighted = user.speciesSighted ?? [];
@@ -675,6 +729,7 @@ async function updatePost(db, postID, userID, postTitle, species, imageName, des
             speciesSighted = speciesSighted.filter(s => s !== oldSpecies);
         }
 
+        //update user with the new information
         await updateUser(db, userID, user.numPosts, user.admin, user.numTotalComments, speciesSighted);
     }
 
@@ -682,7 +737,7 @@ async function updatePost(db, postID, userID, postTitle, species, imageName, des
 }
 
 //this endpoint is linked to a button on the post that is only visible if you are logged
-//in as the post creator
+//in as the post creator 
 //user can update post information based on postid
 app.get('/update-post/:postID', requiresLogin, async (req, res) => {
     const db = await Connection.open(mongoUri, wabanimals_db);
@@ -690,17 +745,18 @@ app.get('/update-post/:postID', requiresLogin, async (req, res) => {
     //find post to update in the posts collection
     const post = await db.collection(POSTS).findOne({ postID: postID });
 
+    //make sure post exists first
     if (!post) {
         req.flash('error', 'Post not found');
         return res.redirect('/home');
     }
 
+    //check if user currently logged in is author
     const currentUser = await findUser(db, req.session.userID);
-    const isAdmin = currentUser?.admin ?? false;
 
     //ensure that the logged in user is the same as the user id on the post
-    //only post authors (and admin) can edit posts
-    if (post.userID !== req.session.userID && !isAdmin) {
+    //only post authors can edit posts
+    if (post.userID !== req.session.userID ) {
         req.flash('error', 'You can only delete your own posts if you are not admin.');
         return res.redirect('/home;')
     }
@@ -710,26 +766,29 @@ app.get('/update-post/:postID', requiresLogin, async (req, res) => {
 })
 
 
-//this end point updates the post based on the form data
+//this end point updates the post based on the form data and the postID
 app.post('/update-post/:postID', requiresLogin, upload.single('image'), async (req, res) => {
     const db = await Connection.open(mongoUri, wabanimals_db);
     const postID = parseInt(req.params.postID);
     //find the post to update from the collection
     const post = await db.collection(POSTS).findOne({ postID: postID });
+
     //always use original author
     const originalUserID = post.userID;
 
+    //make sure post exists
     if (!post) {
         req.flash('error', 'Post not found');
         return res.redirect('/home');
     }
 
+    //check who currently logged in author is
     const currentUser = await findUser(db, req.session.userID);
     const isAdmin = currentUser?.admin ?? false;
 
     //make sure the logged in user is the same user who created the post
-    if (post.userID !== req.session.userID && !isAdmin) {
-        req.flash('error', 'You can only update your own posts if you are not admin.');
+    if (post.userID !== req.session.userID ) {
+        req.flash('error', 'You can only update your own posts.');
         return res.redirect('/home;')
     }
 
@@ -743,7 +802,7 @@ app.post('/update-post/:postID', requiresLogin, upload.single('image'), async (r
         imageName = req.file.filename;
     }
 
-    //make sure that all information is re-filledo ut
+    //make sure that all information is re-filled out
     if (!title || !species || !location || !time || !date || !description) {
         req.flash('error', 'All fields are required.');
         return res.redirect(`/update-post/${postID}`);
@@ -752,6 +811,7 @@ app.post('/update-post/:postID', requiresLogin, upload.single('image'), async (r
     //update post with the new information
     const result = await updatePost(db, postID, originalUserID, title, species, imageName, description, date, time, location);
 
+    //update image as well
     if (result) {
         if (req.file && post.imageName) {
             const oldPath = path.join(UPLOAD_DIR, post.imageName);
@@ -763,12 +823,11 @@ app.post('/update-post/:postID', requiresLogin, upload.single('image'), async (r
     } else {
         req.flash('error', 'Could not update post.');
     }
-    
+
 
     return res.redirect('/home');
 
 })
-
 
 
 //deletes post by postID and updates profile for the author - only for admin or post author
@@ -776,12 +835,10 @@ async function deletePost(db, postID) {
     //find the post to delete and store it
     const result = await db.collection("posts").findOne({ postID: postID });
 
-
     //delete the post
     const delete_result = await db.collection("posts").deleteOne({ postID: postID });
 
-
-    //collect informaiton about author
+    //collect informaiton about author to update the profile page stats
     const userID = result.userID;
     const user = await findUser(db, userID);
     let old_num_posts = user.numPosts;
@@ -790,26 +847,26 @@ async function deletePost(db, postID) {
     const old_species_sighted = user.speciesSighted ?? [];
 
     // check if user has other posts with this species
-    const otherPostsWithSpecies = await db.collection("posts").countDocuments({ 
-        userID: userID, 
+    const otherPostsWithSpecies = await db.collection("posts").countDocuments({
+        userID: userID,
         species: result.species,
         postID: { $ne: postID }
     });
 
     //take away the species of the deleted post
-    const new_species = otherPostsWithSpecies > 0 
-        ? old_species_sighted 
+    const new_species = otherPostsWithSpecies > 0
+        ? old_species_sighted
         : old_species_sighted.filter(s => s !== result.species);
-    
-        //update the user profile, take away one post and one species
-    const user_result = await updateUser(db, result.userID, Math.max(old_num_posts - 1,0), old_admin, old_num_comments, new_species);
+
+    //update the user profile, take away one post and one species
+    const user_result = await updateUser(db, result.userID, Math.max(old_num_posts - 1, 0), old_admin, old_num_comments, new_species);
     console.log("new_user_result =", user_result)
 
     //return true if one object was deleted
     return delete_result.deletedCount === 1;
 }
 
-//this end point deletes the post on the backend (only fo admin or post author)
+//this end point deletes the post on the backend (only for admin or post author)
 app.post('/delete-post', requiresLogin, async (req, res) => {
 
     //make sure user is logged in
@@ -817,16 +874,19 @@ app.post('/delete-post', requiresLogin, async (req, res) => {
         req.flash('error', 'You must be logged in.');
         return res.redirect('/home');
     }
+
+    //find postID from the form params
     const db = await Connection.open(mongoUri, wabanimals_db);
     const postID = parseInt(req.body.postID);
 
     //find the post to delete based on the postid
     const post = await db.collection(POSTS).findOne({ postID: postID });
 
+    //check if currently logged in user is admin
     const currentUser = await findUser(db, req.session.userID);
     const isAdmin = currentUser?.admin ?? false;
 
-    //only author can delete the post
+    //only author or admin can delete the post
     if (post.userID !== req.session.userID && !isAdmin) {
 
         req.flash('error', 'You can only delete your own posts if you are not admin.');
@@ -834,6 +894,8 @@ app.post('/delete-post', requiresLogin, async (req, res) => {
     }
     //delete the post 
     const result = await deletePost(db, postID);
+
+    //return results of deletion attempt
     if (result !== null) {
         req.flash('info', `Post number ${postID} deleted successfully.`);
     } else {
@@ -855,6 +917,7 @@ async function insertNewUser(db, userID, hash, numPosts, admin, numTotalComments
         speciesSighted: speciesSighted
     }
 
+    //insert new user based on form params
     const result = await db.collection(USERS).insertOne(newUser);
     //return true and userid to make it easier to find later
     return {
@@ -905,7 +968,10 @@ app.get("/upload", requiresLogin, (req, res) => {
 });
 
 
-// increments the "likes" for a post and returns the entire updated post document
+// Helper function to handle liking a post
+// - Ensures the post exists
+// - Prevents a user from liking the same post multiple times
+// - Atomically updates both the like count and likedBy array
 // This iversion uses findOneAndUpdate, updating and returning
 // the update document in one operation.
 async function likePost(postID, userID) {
@@ -928,32 +994,36 @@ async function likePost(postID, userID) {
             $inc: { likes: 1 }, //increment the number of likes shown on the post
             $addToSet: { likedBy: userID } //add to the likedBy array
         },
-        
+
         {
             returnDocument: 'after'
         }
     );
 
-    return result; 
+    return result;
 }
 
 //Ajax likes for posts, a POST route that calls the likePost helper function
 // defined above in order to show post likes on the home page
+//This route is triggered by a user clicking the "like" button on a post
 app.post('/likeAjax/:postID', requiresLogin, async (req, res) => {
+    //errors if a user tries to like a post who is not logged in 
     if (!req.session.logged_in) {
         return res.json({ error: true, message: "Login required" });
     }
-
+    //extracts necessary data
     const userID = req.session.userID;
     const postID = Number(req.params.postID);
 
+    //calls helper function
     const updated = await likePost(postID, userID);
 
     //post an error message if one of the two error cases is true (post already liked by user, or post does not exist)
-    if (updated == null ) {
+    if (updated == null) {
         return res.json({ error: true, message: "Already liked or post not found" });
     }
-
+    //Sends updated like count back to client
+    // Frontend will use this to update the UI dynamically
     return res.json({
         error: false,
         likes: updated.likes,
@@ -961,45 +1031,66 @@ app.post('/likeAjax/:postID', requiresLogin, async (req, res) => {
     });
 });
 
-//COMMENTING
+// Helper function to add a new comment to a post
+// Takes in the postID, the user making the comment, and the actual comment text
+// Returns the updated post document (or null if the post doesn't exist)
 async function addComment(postID, userID, text) {
     const db = await Connection.open(mongoUri, wabanimals_db);
     const post = await db.collection(POSTS).findOne({ postID });
     //returns null if there is no post
     if (!post) return null;
 
-
+    // Creates a new comment object to store in the database
     const comment = {
         userID: userID,
         text: text,
         createdAt: new Date()
     };
-
+    // Pushes the new comment into the post's comments array
+    // findOneAndUpdate returns the updated document after modification
     const result = await db.collection(POSTS).findOneAndUpdate(
         { postID: postID },
         { $push: { comments: comment } },
         { returnDocument: 'after' }
     );
+    // Increments the total number of comments made by this user
+    // This keeps the user's profile statistics up to date
+    await db.collection(USERS).updateOne(
+        { userID: userID },
+        { $inc: { numTotalComments: 1 } }
+    );
 
+    //returns the updated post document
     return result;
 }
 
-//AJAX ENDPOINT COMMENTING 
+// AJAX route for submitting a comment to a specific post
+// Expects: postID in URL, comment text in request body
+// Returns: updated comments array (or error message)
 app.post('/commentAjax/:postID', async (req, res) => {
+    //errors if user tries to comment w/o being logged in
     if (!req.session.logged_in) {
         return res.json({ error: true, message: "Login required" });
     }
-
+    //extracts necessary data
     const userID = req.session.userID;
     const postID = Number(req.params.postID);
     const text = req.body.text;
 
+    //prevent empty comments, errors if empty
+    if (!text || text.trim() === "") {
+        return res.json({ error: true, message: "Comment cannot be empty" });
+    }
+
+
     const updated = await addComment(postID, userID, text);
 
-    if (updated == null ) {
+    //errors if the post does not exist or if update failed
+    if (updated == null) {
         return res.json({ error: true, message: "Comment failed" });
     }
 
+    // Return updated comments array so frontend can re-render comments
     return res.json({
         error: false,
         comments: updated.comments,

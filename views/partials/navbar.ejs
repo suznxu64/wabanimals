@@ -20,6 +20,7 @@ Date: April 2026
             <li>
         
 
+                <!-- log out button only if already logged in -->
             <% if (session.logged_in ) { %>
                         <form method="POST" action="/logout" style="display:inline;"">
                             <button class="logout" type="submit ">Log Out</button>

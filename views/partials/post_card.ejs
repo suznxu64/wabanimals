@@ -26,32 +26,39 @@ Date: April 2026
                             <% } %>
             </p>
 
+            <!-- species -->
             <p class="post-text">
                 <strong>Species:</strong>
                 <%= post.species %>
             </p>
 
+            <!-- location -->
             <p class="post-text">
                 <strong>Location:</strong>
                 <%= post.sightingLocation %>
             </p>
 
+            <!-- date -->
             <p class="post-text">
                 <strong>Date:</strong>
                 <%= post.sightingDate %> at <%= post.sightingTime %>
             </p>
 
 
+            <!-- description -->
             <p class="post-text">
                 <%= post.description %>
             </p>
-            <% if (session.logged_in && session.username===post.userID || isAdmin) { %>
+            <!-- if logged in user is the author of the post then they can update -->
+            <% if (session.logged_in && session.userID===post.userID) { %>
                 <a href="/update-post/<%= post.postID %>">
                     <button class="updateBtn">Update Post</button>
                 </a>
                 <% } %>
 
-                    <% if (session.logged_in && session.username===post.userID || isAdmin) { %>
+                <!-- if logged in user is author or admin they can delete -->
+
+                    <% if (session.logged_in && session.userID===post.userID || isAdmin) { %>
                         <form method="POST" action="/delete-post">
                             <input type="hidden" name="postID" value="<%= post.postID %>">
                             <button class="deleteBtn" type="submit">Delete Post</button>
@@ -104,6 +111,7 @@ Date: April 2026
                                 <% } %>
             </div>
 
+            <!-- can comment if logged in -->
             <% if (session.logged_in) { %>
                 <form class="comment-form">
                     <input type="text" class="comment-input" placeholder="Write a comment..." required>

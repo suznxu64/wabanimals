@@ -1,5 +1,5 @@
 <!--
-Author: Nivale Baxendell
+Author: Nivale Baxendell, Ariana Inamdar, Suzy Xu
 Description: search page ejs to display search results
 Date: 3/30
 -->
@@ -27,16 +27,19 @@ Date: 3/30
             <!--include  seach bar -->
             <%- include('partials/search_bar') %>
 
+             <!-- if no input show text -->
                 <% if (results===null) { %>
                     <h2>Use the search bar above to filter animal sightings by species and by location on campus.</h2>
                     <% } else { %>
 
                         <h3>Results for "<%= term %>"</h3>
 
+                         <!-- if no results, display that -->
                         <% if (results.length===0) { %>
                             <p>No results found.</p>
                             <% } %>
 
+                             <!-- display each result as a post -->
                                 <% results.forEach(post=> { %>
                                     <%- include('partials/post_card.ejs', { post: post }) %>
                                         <% }) %>
