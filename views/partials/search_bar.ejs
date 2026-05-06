@@ -1,26 +1,32 @@
 <!--
 Author: Nivale Baxendell
-Description: seach bar for searching by species, location, date
+Description: seach bar for searching the database by species or xlocation
 Date: 3/30
 -->
 
 
-<nav>
+<nav aria-label="Search">
     <form action="/search" method="GET">
-        <label>Search:
-            <input type="text" name="term" required value="<%= typeof term !== 'undefined' ? term : '' %>"
-            placeholder="Enter search term">
-        </label>
+        <fieldset>
 
-        <label>Kind:
-        <select name="kind" required>
-            <option value="" <%=!kind ? 'selected' : '' %>>choose one</option>
-            <option value="species" <%=kind==='species' ? 'selected' : '' %>>species</option>
-            <option value="location" <%=kind==='location' ? 'selected' : '' %>>location</option>
+            <label for="term">Search:</label>
+            <input id="term" type="text" name="term" required value="<%= typeof term !== 'undefined' ? term : '' %>"
+                placeholder="Enter search term">
 
-        </select>
-        </label>
+            <label for="kind">Kind:</label>
+            <select id="kind" name="kind" required>
+                <option value="" disabled <%=!kind ? 'selected' : '' %>>
+                    choose one
+                </option>
+                <option value="species" <%=kind==='species' ? 'selected' : '' %>>
+                    species
+                </option>
+                <option value="location" <%=kind==='location' ? 'selected' : '' %>>
+                    location
+                </option>
+            </select>
 
-        <button type="submit">Search</button>
+            <button type="submit">Search posts</button>
+        </fieldset>
     </form>
 </nav>
