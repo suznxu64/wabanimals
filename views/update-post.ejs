@@ -6,12 +6,12 @@
 <div class="content">
     <div class="form-template">
         <h1>Edit Post</h1>
-        <form method="POST" action="/update-post/<%= post.postID %>">
+        <form method="POST" action="/update-post/<%= post.postID %>" enctype="multipart/form-data">
             <label>Title
                 <input type="text" name="title" value="<%= post.postTitle %>" required>
             </label>
             <label>Update image
-                <input type="file" accept="image/*" name="image" >
+                <input type="file" name="image" >
             </label>
             <p>
             <label for="species">Species</label>

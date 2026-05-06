@@ -45,7 +45,7 @@ Date: April 2026
             <p class="post-text">
                 <%= post.description %>
             </p>
-            <% if (session.logged_in && session.username===post.userID) { %>
+            <% if (session.logged_in && session.username===post.userID || isAdmin) { %>
                 <a href="/update-post/<%= post.postID %>">
                     <button class="updateBtn">Update Post</button>
                 </a>

@@ -18,6 +18,7 @@ const multer = require('multer');
 const counters = require('./counters');
 const { CHAR_0 } = require('picomatch/lib/constants');
 const { runInNewContext } = require('vm');
+const fs = require('fs');
 
 const ROUNDS = 15;
 
@@ -33,7 +34,10 @@ app.use(cs304.logStartRequest);
 // This handles POST data
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-app.use('/uploads', express.static('uploads')); //multer for file upload
+console.log(__dirname);
+app.use('/uploads', express.static(path.join(__dirname, '/students/wabanimals/uploads'))); //multer for file upload
+const uploadPath = path.join('~/students/wabanimals/uploads');
+console.log("Serving uploads from:", uploadPath);
 
 app.use(cs304.logRequestData);  // tell the user about any request data
 
@@ -42,6 +46,7 @@ app.set('view engine', 'ejs');
 app.use(express.static('public'));
 //inserting flash
 app.use(flash());
+//app.use('/uploads', express.static('public/uploads'));
 
 //automatic cookiesession
 app.use(cookieSession({
@@ -50,14 +55,13 @@ app.use(cookieSession({
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }))
 
-
 app.use(async (req, res, next) => {
     res.locals.session = req.session;
     res.locals.isAdmin = false;
     if (req.session.logged_in) {
         try {
             const db = await Connection.open(mongoUri, wabanimals_db);
-            const user = await findUser(db, req.session.username);
+            const user = await findUser(db, req.session.userID);
             res.locals.isAdmin = user?.admin ?? false;
         } catch (error) {
             console.log('error fetching admin status:', error);
@@ -66,7 +70,11 @@ app.use(async (req, res, next) => {
     next();
 });
 
-
+//declaring wabanimals our db for all functions/queries
+const wabanimals_db = "wabanimals";
+const USERS = "users";
+const POSTS = "posts";
+const UPLOAD_DIR = '/students/wabanimals/uploads';
 
 function timeString(dateObj) {
     if (!dateObj) {
@@ -80,10 +88,12 @@ function timeString(dateObj) {
     return hh + mm + ss
 }
 
+
+
 //configures storage property of Milter
 var storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, 'public/uploads')
+        cb(null, UPLOAD_DIR)
     },
     filename: function (req, file, cb) {
         let parts = file.originalname.split('.');
@@ -108,17 +118,13 @@ var upload = multer({
 
 const mongoUri = cs304.getMongoUri();
 
-//declaring wabanimals our db for all functions/queries
-const wabanimals_db = "wabanimals";
-const USERS = "users";
-const POSTS = "posts";
 
 
 /*
 * This function makes sure certain pages can only be seen when a user in logged in. 
 */
 function requiresLogin(req, res, next) {
-    if (!req.session.username) {
+    if (!req.session.userID) {
       req.flash('error', 'This page requires you to be logged in - please do so.');
       return res.redirect("/login");
     }
@@ -237,10 +243,15 @@ app.get('/register', (req, res) => {
 */
 app.post('/register', async (req, res) => {
     try {
-        const userID = req.body.userID;
-        const password = req.body.password;
+        const userID = req.body.username.trim();
+        const password = req.body.password.trim();
+        if (!userID || !password) {
+            req.flash('error', 'Username and password cannot be empty or just spaces.');
+            return res.redirect('/register');
+        }
         const db = await Connection.open(mongoUri, wabanimals_db);
         var existingUser = await db.collection(USERS).findOne({ userID: userID });
+        console.log("this is the existing user:", existingUser);
         //flashes an error if user exists
         if (existingUser) {
             req.flash('error', "Login already exists - please try logging in instead.");
@@ -255,14 +266,13 @@ app.post('/register', async (req, res) => {
             req.flash('info', 'successfully joined and logged in as ' + userID);
         }
 
-
-        req.session.userId = userId;
+        req.session.userID = userID;
         req.session.logged_in = true;
         return res.redirect('/home');
     } catch (error) {
         console.log(error);
         req.flash('error', `Form submission error: ${error}`);
-        return res.redirect('/home')
+        return res.redirect('/register')
     }
 });
 
@@ -280,10 +290,14 @@ app.get('/login', (req, res) => {
 */
 app.post("/login", async (req, res) => {
     try {
-        const username = req.body.username;
-        const password = req.body.password;
+        const userID = req.body.username.trim();
+        const password = req.body.password.trim();
+        if (!userID || !password) {
+            req.flash('error', 'Username and password cannot be empty or just spaces.');
+            return res.redirect('/login');
+        }
         const db = await Connection.open(mongoUri, wabanimals_db);
-        var existingUser = await db.collection(USERS).findOne({ userID: username });
+        var existingUser = await db.collection(USERS).findOne({ userID: userID });
         console.log('user', existingUser);
         if (!existingUser) {
             req.flash('error', "Username does not exist - try again.");
@@ -296,10 +310,10 @@ app.post("/login", async (req, res) => {
             req.flash('error', "Username or password incorrect - try again.");
             return res.redirect('/login')
         }
-        req.flash('info', 'successfully logged in as ' + username);
-        req.session.username = username;
+        req.flash('info', 'successfully logged in as ' + userID);
+        req.session.userID= userID;
         req.session.logged_in = true;
-        console.log('login as', username);
+        console.log('login as', userID);
         return res.redirect('/home');
     } catch (error) {
         req.flash('error', `Form submission error: ${error}`);
@@ -318,8 +332,8 @@ app.get('/logout', (req, res) => {
 * This endpoint logs the user out of their account and flashes an error if the user attempts to log out but is not logged in.
 */
 app.post('/logout', (req, res) => {
-    if (req.session.username) {
-        req.session.username = null;
+    if (req.session.userID) {
+        req.session.userID = null;
         req.session.logged_in = false;
         req.flash('info', 'You are logged out');
         return res.redirect('/');
@@ -338,7 +352,7 @@ app.get('/profile', requiresLogin, async (req, res) => {
         const db = await Connection.open(mongoUri, wabanimals_db);
 
         //get userid from session info
-        const userID = req.session.username;
+        const userID = req.session.userID;
 
         //find user information from the collection
         const userProfile = await db.collection(USERS).findOne({ userID: userID });
@@ -361,7 +375,7 @@ app.get('/admin', requiresLogin, async(req, res) => {
     //find user information from the collection
 
     const db = await Connection.open(mongoUri, wabanimals_db)
-    const currentUser = await findUser(db, req.session.username);
+    const currentUser = await findUser(db, req.session.userID);
     const isAdmin = currentUser?.admin ?? false;
 
     if (!isAdmin) {
@@ -375,10 +389,10 @@ app.get('/admin', requiresLogin, async(req, res) => {
 
 })
 
-app.post("/admin/ban/:username", requiresLogin, async(req,res) => {
+app.post("/admin/ban/:userID", requiresLogin, async(req,res) => {
     const db = await Connection.open(mongoUri, wabanimals_db)
 
-    const currentUser = await findUser(db, req.session.username);
+    const currentUser = await findUser(db, req.session.userID);
     const isAdmin = currentUser?.admin ?? false;
 
     if (!isAdmin) {
@@ -387,17 +401,17 @@ app.post("/admin/ban/:username", requiresLogin, async(req,res) => {
     }
 
     await db.collection('users').deleteOne(
-        {userID: req.params.username}
+        {userID: req.params.userID}
     )
 
-    req.flash('info', `User ${req.params.username} deleted.`);
+    req.flash('info', `User ${req.params.userID} deleted.`);
     return res.redirect('/admin');  
 })
 
-app.post("/admin/make-admin/:username", requiresLogin, async(req,res) => {
+app.post("/admin/make-admin/:userID", requiresLogin, async(req,res) => {
     const db = await Connection.open(mongoUri, wabanimals_db)
 
-    const currentUser = await findUser(db, req.session.username);
+    const currentUser = await findUser(db, req.session.userID);
     const isAdmin = currentUser?.admin ?? false;
 
     if (!isAdmin) {
@@ -406,18 +420,18 @@ app.post("/admin/make-admin/:username", requiresLogin, async(req,res) => {
     }
 
     await db.collection('users').updateOne(
-        {userID: req.params.username}, 
+        {userID: req.params.userID}, 
         {$set: {admin: true}}
     )
 
-     req.flash('info', `User ${req.params.username} is now admin.`);
+     req.flash('info', `User ${req.params.userID} is now admin.`);
     return res.redirect('/admin'); 
 })
 
-app.post("/admin/remove-admin/:username", requiresLogin, async(req, res) => {
+app.post("/admin/remove-admin/:userID", requiresLogin, async(req, res) => {
     const db = await Connection.open(mongoUri, wabanimals_db)
 
-    const currentUser = await findUser(db, req.session.username);
+    const currentUser = await findUser(db, req.session.userID);
     const isAdmin = currentUser?.admin ?? false;
 
     if (!isAdmin) {
@@ -426,11 +440,11 @@ app.post("/admin/remove-admin/:username", requiresLogin, async(req, res) => {
     }
 
     await db.collection('users').updateOne(
-        {userID: req.params.username}, 
+        {userID: req.params.userID}, 
         {$set: {admin: false}}
     )
 
-    req.flash('info', `User ${req.params.username} is no longer admin.`);
+    req.flash('info', `User ${req.params.userID} is no longer admin.`);
     return res.redirect('/admin');
 })
 
@@ -450,6 +464,9 @@ app.post("/submit-post-form", upload.single('image'), async (req, res) => {
         req.flash('error', req.fileValidationError);
         return res.redirect('/home');
     }
+
+    await fs.promises.chmod(req.file.path, 0o644);
+
 
     try {
         const db = await Connection.open(mongoUri, wabanimals_db);
@@ -489,7 +506,6 @@ app.post("/submit-post-form", upload.single('image'), async (req, res) => {
         console.log("description: ", description);
 
         // get user from session - not running yet
-        //const userID = req.session.username;
         const userID = req.session.username;
 
         if (req.fileValidationError) {
@@ -611,7 +627,7 @@ async function findPost(db, postID) {
 }
 
 // updates post by searching for postID through database -- admin only
-async function updatePost(db, postID, userID, postTitle, species, description, sightingDate, sightingTime, sightingLocation) {
+async function updatePost(db, postID, userID, postTitle, species, imageName, description, sightingDate, sightingTime, sightingLocation) {
      // get old post to compare species before updating
     const oldPost = await db.collection("posts").findOne({ postID: postID });
     const oldSpecies = oldPost.species;
@@ -627,6 +643,8 @@ async function updatePost(db, postID, userID, postTitle, species, description, s
                     userID: userID,
                     postTitle: postTitle,
                     species: species,
+                    //image: image,
+                    imageName: imageName,
                     description: description,
                     sightingDate: sightingDate,
                     sightingTime: sightingTime,
@@ -660,7 +678,7 @@ async function updatePost(db, postID, userID, postTitle, species, description, s
         await updateUser(db, userID, user.numPosts, user.admin, user.numTotalComments, speciesSighted);
     }
 
-    return result.modifiedCount === 1;
+    return result.matchedCount === 1;
 }
 
 //this endpoint is linked to a button on the post that is only visible if you are logged
@@ -677,12 +695,12 @@ app.get('/update-post/:postID', requiresLogin, async (req, res) => {
         return res.redirect('/home');
     }
 
-    const currentUser = await findUser(db, req.session.username);
+    const currentUser = await findUser(db, req.session.userID);
     const isAdmin = currentUser?.admin ?? false;
 
     //ensure that the logged in user is the same as the user id on the post
     //only post authors (and admin) can edit posts
-    if (post.userID !== req.session.username && !isAdmin) {
+    if (post.userID !== req.session.userID && !isAdmin) {
         req.flash('error', 'You can only delete your own posts if you are not admin.');
         return res.redirect('/home;')
     }
@@ -693,7 +711,7 @@ app.get('/update-post/:postID', requiresLogin, async (req, res) => {
 
 
 //this end point updates the post based on the form data
-app.post('/update-post/:postID', requiresLogin, async (req, res) => {
+app.post('/update-post/:postID', requiresLogin, upload.single('image'), async (req, res) => {
     const db = await Connection.open(mongoUri, wabanimals_db);
     const postID = parseInt(req.params.postID);
     //find the post to update from the collection
@@ -706,17 +724,24 @@ app.post('/update-post/:postID', requiresLogin, async (req, res) => {
         return res.redirect('/home');
     }
 
-    const currentUser = await findUser(db, req.session.username);
+    const currentUser = await findUser(db, req.session.userID);
     const isAdmin = currentUser?.admin ?? false;
 
     //make sure the logged in user is the same user who created the post
-    if (post.userID !== req.session.username && !isAdmin) {
+    if (post.userID !== req.session.userID && !isAdmin) {
         req.flash('error', 'You can only update your own posts if you are not admin.');
         return res.redirect('/home;')
     }
 
     //collect info from the form
     const { title, species, location, time, date, description } = req.body;
+    //let image = post.image;
+    let imageName = post.imageName;
+
+    if (req.file) {
+        //image = req.file;
+        imageName = req.file.filename;
+    }
 
     //make sure that all information is re-filledo ut
     if (!title || !species || !location || !time || !date || !description) {
@@ -725,13 +750,21 @@ app.post('/update-post/:postID', requiresLogin, async (req, res) => {
     }
 
     //update post with the new information
-    const result = await updatePost(db, postID, originalUserID, title, species, description, date, time, location);
+    const result = await updatePost(db, postID, originalUserID, title, species, imageName, description, date, time, location);
 
     if (result) {
+        if (req.file && post.imageName) {
+            const oldPath = path.join(UPLOAD_DIR, post.imageName);
+            fs.unlink(oldPath, err => {
+                if (err) console.log("Failed to delete old image:", err);
+            });
+        }
         req.flash('info', 'Post updated successfully!');
     } else {
         req.flash('error', 'Could not update post.');
     }
+    
+
     return res.redirect('/home');
 
 })
@@ -790,11 +823,11 @@ app.post('/delete-post', requiresLogin, async (req, res) => {
     //find the post to delete based on the postid
     const post = await db.collection(POSTS).findOne({ postID: postID });
 
-    const currentUser = await findUser(db, req.session.username);
+    const currentUser = await findUser(db, req.session.userID);
     const isAdmin = currentUser?.admin ?? false;
 
     //only author can delete the post
-    if (post.userID !== req.session.username && !isAdmin) {
+    if (post.userID !== req.session.userID && !isAdmin) {
 
         req.flash('error', 'You can only delete your own posts if you are not admin.');
         return res.redirect('/home');
@@ -911,7 +944,7 @@ app.post('/likeAjax/:postID', requiresLogin, async (req, res) => {
         return res.json({ error: true, message: "Login required" });
     }
 
-    const userID = req.session.username;
+    const userID = req.session.userID;
     const postID = Number(req.params.postID);
 
     const updated = await likePost(postID, userID);
@@ -957,7 +990,7 @@ app.post('/commentAjax/:postID', async (req, res) => {
         return res.json({ error: true, message: "Login required" });
     }
 
-    const userID = req.session.username;
+    const userID = req.session.userID;
     const postID = Number(req.params.postID);
     const text = req.body.text;
 
