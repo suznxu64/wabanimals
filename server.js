@@ -16,7 +16,7 @@ const bcrypt = require('bcrypt');
 //multer for image upload
 const multer = require('multer');
 
-const counters = require('./counters.js');
+const counters = require('./counters');
 const { CHAR_0 } = require('picomatch/lib/constants');
 const { runInNewContext } = require('vm');
 const fs = require('fs');
