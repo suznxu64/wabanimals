@@ -1,3 +1,9 @@
+<!--
+Author: Ariana Inamdar, Suzy, Nivale
+Description: update page for filling out update form, uses post_form partial with prefilled information from the original post
+Date: 3/30
+-->
+
 <%- include('partials/navbar') %>
 <%- include('partials/flash.ejs') %>
 <link rel="stylesheet" href="/styles.css">
@@ -14,6 +20,7 @@
                 <input type="file" name="image" >
             </label>
             <p>
+                 <!-- species drop down -->
             <label for="species">Species</label>
         <select id="species" name="species" required>
             <option value="">choose species</option>
@@ -43,6 +50,7 @@
         </select>
         </p>
         <p>
+             <!-- location drop down -->
             <label for="location">Sighting Location</label>
         <select id="location" name="location" required>
     <option value="">choose location</option>
@@ -68,6 +76,9 @@
     <option value="Mods to Ville path" <%= post.sightingLocation === 'Mods to Ville path' ? 'selected' : '' %>>Mods to Ville path</option>
     <option value="other" <%= post.sightingLocation === 'other' ? 'selected' : '' %>>other</option>
 </select></p>
+
+
+
             <label>Time
                 <input type="time" name="time" value="<%= post.sightingTime %>" required>
             </label>

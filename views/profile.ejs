@@ -1,3 +1,9 @@
+<!--
+Author: Nivale Baxendell, Ariana Inamdar, Suzy Xu
+Description: Profile page where each user can see information about their profile and their posts
+Date: 3/30
+-->
+
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -17,15 +23,19 @@
 
 
     <div class="profile-header">
+         <!-- avatar is first initial in the username -->
         <div class="profile-avatar"><%= user.userID[0].toUpperCase() %></div>
         <div>
+             <!-- full username -->
             <div class="profile-username"><%=user.userID%></div>
             <div class="profile-stats">
                 <div class="stat-box">
+                     <!-- display num of posts for that user-->
                     <div class="stat-number"><%= user.numPosts %></div>
                     <div class="stat-label">Posts</div>
                 </div>
                 <div class="stat-box">
+                     <!-- display num of comments for that user -->
                     <div class="stat-number"><%= user.numTotalComments %></div>
                     <div class="stat-label">Comments</div>
                 </div>
@@ -34,8 +44,10 @@
     </div>
 
     <div class="profile-section">
+         <!-- what species this user has seen -->
         <h2>Species Sighted</h2>
         <div class="species-tags">
+             <!-- list species-->
             <% (user.speciesSighted ?? []).forEach(s => { %>
                 <span class="species-tag"> <%= s %></span>
             <% }) %>
@@ -45,9 +57,11 @@
     <div class="profile-section profile-posts">
     <h2>My Sightings</h2>
 
+     <!-- display all posts -->
     <% if (posts.length === 0) { %>
         <p style="color: #888;">You haven't posted any sightings yet!</p>
     <% } else { %>
+         <!-- display with same partial from home page-->
         <% posts.forEach(post => { %>
             <%- include('partials/post_card.ejs', { post: post }) %>
              <% }) %>

@@ -1,5 +1,5 @@
 <!--Documentation
-Author: Nivale
+Author: Nivale, Ari, Suzy
 Description: April 2026
 Date: Home page with introductory information and live post feed 
 -->
@@ -45,18 +45,22 @@ Date: Home page with introductory information and live post feed
                     <div class="stats-grid">
                         <div class="stat-card">
                             <span class="stat-number">
+                                 <!-- data overview bar to show overall stats -->
+                                   <!-- how many posts in the database -->
                                 <%= totalPosts %>
                             </span>
                             <span class="stat-label">Posts</span>
                         </div>
                         <div class="stat-card">
                             <span class="stat-number">
+                                 <!-- total species sighted -->
                                 <%= totalSpecies %>
                             </span>
                             <span class="stat-label">Species</span>
                         </div>
                         <div class="stat-card">
                             <span class="stat-number">
+                                 <!--total users-->
                                 <%= totalUsers %>
                             </span>
                             <span class="stat-label">Users</span>
@@ -75,6 +79,7 @@ Date: Home page with introductory information and live post feed
                 <% if (posts && posts.length> 0) { %>
 
                     <% posts.forEach(post=> { %>
+                         <!-- for each post, display it through the card ejs -->
                         <%- include('partials/post_card.ejs', { post: post }) %>
                             <% }) %>
 
