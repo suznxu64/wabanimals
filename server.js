@@ -7,8 +7,8 @@ const bodyParser = require('body-parser');
 const cookieSession = require('cookie-session');
 
 // our modules loaded from cwd
-const { Connection } = require('./connection');
-const cs304 = require('./cs304');
+const { Connection } = require('./connection.js');
+const cs304 = require('./cs304.js');
 const { add, result, find } = require('lodash');
 const flash = require('express-flash');
 //bcrypt for passwords
@@ -16,7 +16,7 @@ const bcrypt = require('bcrypt');
 //multer for image upload
 const multer = require('multer');
 
-const counters = require('./counters');
+const counters = require('./counters.js');
 const { CHAR_0 } = require('picomatch/lib/constants');
 const { runInNewContext } = require('vm');
 const fs = require('fs');
